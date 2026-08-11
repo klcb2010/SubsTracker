@@ -30,45 +30,52 @@ jobs:
         run: |
           git remote add upstream https://github.com/wangwangit/SubsTracker.git || true
 
-      - name: Fetch repositories
+      - name: Fetch origin and upstream
         run: |
           git fetch origin master
           git fetch upstream master
 
-      - name: Backup local sync workflow
+      - name: Check upstream changes
+        id: upstream
         run: |
-          mkdir -p /tmp/workflow_backup
-          cp .github/workflows/sync.yml /tmp/workflow_backup/sync.yml
+          COUNT=$(git rev-list --count origin/master..upstream/master)
 
-      - name: Sync upstream master
-        run: |
-          git checkout master
-          git reset --hard upstream/master
+          echo "Upstream commits ahead: $COUNT"
 
-      - name: Restore local sync workflow
-        run: |
-          mkdir -p .github/workflows
-          cp /tmp/workflow_backup/sync.yml .github/workflows/sync.yml
-          git add .github/workflows/sync.yml
-
-      - name: Check changes
-        id: changes
-        run: |
-          if git diff --cached --quiet && git diff --quiet; then
+          if [ "$COUNT" -eq 0 ]; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Backup local sync workflow
+        if: steps.upstream.outputs.changed == 'true'
+        run: |
+          mkdir -p /tmp/workflow_backup
+          cp .github/workflows/sync.yml /tmp/workflow_backup/sync.yml
+
+      - name: Sync upstream master
+        if: steps.upstream.outputs.changed == 'true'
+        run: |
+          git checkout master
+          git reset --hard upstream/master
+
+      - name: Restore local sync workflow
+        if: steps.upstream.outputs.changed == 'true'
+        run: |
+          mkdir -p .github/workflows
+          cp /tmp/workflow_backup/sync.yml .github/workflows/sync.yml
+          git add .github/workflows/sync.yml
+
       - name: Commit upstream changes
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.upstream.outputs.changed == 'true'
         run: |
           git add .
           git commit -m "Sync upstream changes"
           git push origin master --force-with-lease
 
       - name: Trigger deploy workflow
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.upstream.outputs.changed == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.PAT_TOKEN }}
