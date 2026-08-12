@@ -3750,6 +3750,7 @@ const lunarBiz = {
 
     // ========== 一次性定时提醒 ==========
     async function openOneTimeReminderModal() {
+      bindOneTimeReminderUi();
       const modal = document.getElementById('oneTimeReminderModal');
       if (!modal) return;
       modal.classList.remove('hidden');
@@ -3835,32 +3836,67 @@ const lunarBiz = {
         list.innerHTML = '<div class="text-red-500">加载失败</div>';
       }
     }
-    document.getElementById('openOneTimeRemindersBtn') && document.getElementById('openOneTimeRemindersBtn').addEventListener('click', openOneTimeReminderModal);
-    document.getElementById('openOneTimeRemindersBtnMobile') && document.getElementById('openOneTimeRemindersBtnMobile').addEventListener('click', openOneTimeReminderModal);
-    document.getElementById('closeOneTimeReminderModal') && document.getElementById('closeOneTimeReminderModal').addEventListener('click', closeOneTimeReminderModal);
-    document.getElementById('oneTimeReminderForm') && document.getElementById('oneTimeReminderForm').addEventListener('submit', async function (e) {
-      e.preventDefault();
-      const payload = {
-        date: document.getElementById('otrDate').value,
-        hour: Number(document.getElementById('otrHour').value),
-        title: document.getElementById('otrTitle').value.trim() || '定时提醒',
-        content: document.getElementById('otrContent').value.trim(),
-        channels: collectOtrChannels()
-      };
-      const res = await apiFetch('/api/one-time-reminders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('已添加定时提醒', 'success');
-        document.getElementById('otrContent').value = '';
-        loadOneTimeReminders();
-      } else {
-        showToast(data.message || '添加失败', 'error');
+    function bindOneTimeReminderUi() {
+      var openBtn = document.getElementById('openOneTimeRemindersBtn');
+      var openBtnMobile = document.getElementById('openOneTimeRemindersBtnMobile');
+      var closeBtn = document.getElementById('closeOneTimeReminderModal');
+      var form = document.getElementById('oneTimeReminderForm');
+      if (openBtn && !openBtn.dataset.otrBound) {
+        openBtn.dataset.otrBound = '1';
+        openBtn.addEventListener('click', openOneTimeReminderModal);
       }
-    });
+      if (openBtnMobile && !openBtnMobile.dataset.otrBound) {
+        openBtnMobile.dataset.otrBound = '1';
+        openBtnMobile.addEventListener('click', openOneTimeReminderModal);
+      }
+      if (closeBtn && !closeBtn.dataset.otrBound) {
+        closeBtn.dataset.otrBound = '1';
+        closeBtn.addEventListener('click', closeOneTimeReminderModal);
+      }
+      if (form && !form.dataset.otrBound) {
+        form.dataset.otrBound = '1';
+        form.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const payload = {
+            date: document.getElementById('otrDate').value,
+            hour: Number(document.getElementById('otrHour').value),
+            title: document.getElementById('otrTitle').value.trim() || '定时提醒',
+            content: document.getElementById('otrContent').value.trim(),
+            channels: collectOtrChannels()
+          };
+          if (!payload.date || payload.content === '' || Number.isNaN(payload.hour)) {
+            showToast('请填写日期、小时和内容', 'error');
+            return;
+          }
+          try {
+            const res = await apiFetch('/api/one-time-reminders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+              showToast('已添加定时提醒', 'success');
+              document.getElementById('otrContent').value = '';
+              await loadOneTimeReminders();
+            } else {
+              showToast(data.message || '添加失败', 'error');
+            }
+          } catch (err) {
+            console.error(err);
+            showToast('添加失败，请稍后重试', 'error');
+          }
+        });
+      }
+    }
+    // 页面脚本可能早于弹窗 DOM 执行；在 load 时再绑一次
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bindOneTimeReminderUi);
+    } else {
+      bindOneTimeReminderUi();
+    }
+    window.addEventListener('load', bindOneTimeReminderUi);
 
     window.addEventListener('load', () => {
       checkTimezoneUpdate();
@@ -4282,4 +4318,5 @@ const lunarBiz = {
 
 </body>
 </html>
+
 
