@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * 部署时注入：订阅可选独立通知渠道 (notifyChannels)
+ * 注入：订阅可选独立通知渠道 (notifyChannels)
  *
- * 策略：用 scripts/assets/ 下的已打补丁完整文件覆盖对应路径。
- * 上游大版本若重命名/重构这些文件，部署会失败并提示更新 assets。
+ * 用 mod/assets/ 下的已打补丁文件覆盖仓库对应路径。
+ * 仅在 CI 工作区生效，不提交进 git。
  *
- * 用法：node scripts/inject-notify-channels.mjs
+ * 用法：node mod/inject-notify-channels.mjs
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,13 +32,14 @@ function mustExist(p, label) {
 }
 
 console.log('[inject] 开始注入 notifyChannels ...');
+console.log('[inject] root   =', root);
+console.log('[inject] assets =', assets);
 
 for (const [fromName, toRel] of MAP) {
   const from = path.join(assets, fromName);
   const to = path.join(root, toRel);
   mustExist(from, `asset ${fromName}`);
   mustExist(path.dirname(to), `目标目录 ${path.dirname(toRel)}`);
-  // 目标文件在上游应存在；若不存在说明路径变了
   if (!fs.existsSync(to)) {
     throw new Error(`[inject] 上游缺少目标文件，请更新映射: ${toRel}`);
   }
@@ -46,7 +47,6 @@ for (const [fromName, toRel] of MAP) {
   console.log(`[inject] wrote ${toRel}`);
 }
 
-// 轻量校验：关键标记必须存在
 const checks = [
   ['src/services/notify/dispatch.js', 'normalizeNotifyChannels'],
   ['src/services/scheduler.js', 'notifyChannels'],
