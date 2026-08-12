@@ -50,6 +50,7 @@ export async function handleOneTimeReminderRoutes(request, env, path) {
     if (!content) {
       return json({ success: false, message: '内容不能为空' }, 400);
     }
+    /** @type {import('../../data/one-time-reminders.repo.js').OneTimeReminder} */
     const item = {
       id: otrRepo.makeId(),
       title,
@@ -57,7 +58,7 @@ export async function handleOneTimeReminderRoutes(request, env, path) {
       date,
       hour: String(hourNum).padStart(2, '0'),
       channels: otrRepo.normalizeChannels(body.channels),
-      status: 'pending',
+      status: /** @type {'pending'} */ ('pending'),
       createdAt: new Date().toISOString(),
       sentAt: null,
       lastError: null
