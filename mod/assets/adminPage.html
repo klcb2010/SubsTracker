@@ -1867,154 +1867,157 @@ const lunarBiz = {
     }
 
     function appendOneTimeReminderRows(tbody) {
-      if (!tbody) return;
-      var list = Array.isArray(window.oneTimeRemindersCache) ? window.oneTimeRemindersCache.slice() : [];
-      var searchInput = document.getElementById('searchKeyword');
-      var keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
-      var statusSelect = document.getElementById('statusFilter');
-      var selectedStatus = statusSelect ? statusSelect.value : '';
-      var modeSelect = document.getElementById('modeFilter');
-      var selectedMode = modeSelect ? modeSelect.value : '';
-      if (selectedMode) return;
+  if (!tbody) return;
+  var list = Array.isArray(window.oneTimeRemindersCache) ? window.oneTimeRemindersCache.slice() : [];
+  var searchInput = document.getElementById('searchKeyword');
+  var keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  var statusSelect = document.getElementById('statusFilter');
+  var selectedStatus = statusSelect ? statusSelect.value : '';
+  var modeSelect = document.getElementById('modeFilter');
+  var selectedMode = modeSelect ? modeSelect.value : '';
+  if (selectedMode) return;
 
-      if (keyword) {
-        list = list.filter(function (it) {
-          var hay = [it.title, it.content, it.date].filter(Boolean).join(' ').toLowerCase();
-          return hay.indexOf(keyword) !== -1;
-        });
-      }
-      if (selectedStatus === 'disabled') {
-        list = list.filter(function (it) { return it.status === 'cancelled' || it.status === 'failed'; });
-      } else if (selectedStatus) {
-        return;
-      }
+  if (keyword) {
+    list = list.filter(function (it) {
+      var hay = [it.title, it.content, it.date].filter(Boolean).join(' ').toLowerCase();
+      return hay.indexOf(keyword) !== -1;
+    });
+  }
+  if (selectedStatus === 'disabled') {
+    list = list.filter(function (it) { return it.status === 'cancelled' || it.status === 'failed'; });
+  } else if (selectedStatus) {
+    return;
+  }
 
-      var statusMap = {
-        pending: '待执行',
-        sent: '已执行',
-        failed: '执行失败',
-        cancelled: '已取消'
-      };
-      var statusClass = {
-        pending: 'bg-indigo-500',
-        sent: 'bg-green-500',
-        failed: 'bg-red-500',
-        cancelled: 'bg-gray-500'
-      };
-      var channelLabels = {
-        telegram: 'Telegram', notifyx: 'NotifyX', webhook: 'Webhook', wechatbot: '企业微信',
-        email: '邮件', bark: 'Bark', gotify: 'Gotify', serverchan: 'Server酱',
-        pushplus: 'PushPlus', ntfy: 'ntfy'
-      };
+  var statusMap = {
+    pending: '待执行',
+    sent: '已执行',
+    failed: '执行失败',
+    cancelled: '已取消'
+  };
+  var statusClass = {
+    pending: 'bg-indigo-500',
+    sent: 'bg-green-500',
+    failed: 'bg-red-500',
+    cancelled: 'bg-gray-500'
+  };
+  var channelLabels = {
+    telegram: 'Telegram', notifyx: 'NotifyX', webhook: 'Webhook', wechatbot: '企业微信',
+    email: '邮件', bark: 'Bark', gotify: 'Gotify', serverchan: 'Server酱',
+    pushplus: 'PushPlus', ntfy: 'ntfy'
+  };
 
-      list.forEach(function (it) {
-        var row = document.createElement('tr');
-        row.className = 'hover:bg-indigo-50/40';
-        var st = it.status || 'pending';
-        var chText = '全局渠道';
-        if (it.channels && it.channels.length) {
-          chText = it.channels.map(function (c) { return channelLabels[c] || c; }).join(', ');
-        }
-        var timeText = (it.date || '') + ' ' + String(it.hour || '0').padStart(2, '0') + ':00';
-
-        // 操作：与订阅列表相同 btn-* 类
-        var ops = '';
-        ops += '<button class="otr-edit edit btn-primary text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-edit mr-1"></i>编辑</button>';
-        if (st === 'pending') {
-          ops += '<button class="otr-test test-notify btn-info text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-paper-plane mr-1"></i>测试</button>';
-        } else {
-          ops += '<button class="otr-restart btn-success text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '" title="重新设为待执行"><i class="fas fa-redo mr-1"></i>重启任务</button>';
-        }
-        ops += '<button class="otr-del delete btn-danger text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-trash-alt mr-1"></i>删除</button>';
-
-        // 4 个可见信息行：时间 / 状态 / 推送 / 操作（名称合并进时间；提醒列隐藏）
-        // 桌面列：名称 | 推送 | 到期 | 提醒(隐) | 状态 | 操作
-        // 移动端 data-label：时间 / 推送 / 状态 / 操作（名称并入时间，提醒隐藏）
-        row.innerHTML =
-          '<td data-label="时间" class="px-4 py-3"><div class="td-content-wrapper">' +
-            '<div class="font-medium text-gray-900"><i class="fas fa-clock text-indigo-500 mr-1"></i>' + (it.title || '定时提醒') + '</div>' +
-            (it.content ? '<div class="text-xs text-gray-500 mt-0.5 whitespace-pre-wrap">' + it.content + '</div>' : '') +
-            '<div class="text-sm text-gray-800 mt-1">' + timeText + '</div>' +
-          '</div></td>' +
-          '<td data-label="推送" class="px-4 py-3"><div class="td-content-wrapper">' +
-            '<div class="text-sm text-gray-800"><i class="fas fa-paper-plane text-indigo-400 mr-1"></i>' + chText + '</div>' +
-          '</div></td>' +
-          '<td data-label="到期" class="px-4 py-3" style="display:none" aria-hidden="true"></td>' +
-          '<td data-label="提醒" class="px-4 py-3" style="display:none" aria-hidden="true"></td>' +
-          '<td data-label="状态" class="px-4 py-3"><div class="td-content-wrapper">' +
-            '<span class="px-2 py-1 text-xs font-medium rounded-full text-white ' + (statusClass[st] || 'bg-gray-500') + '">' +
-            '<i class="fas ' + (st === 'pending' ? 'fa-hourglass-half' : (st === 'sent' ? 'fa-check-circle' : 'fa-info-circle')) + ' mr-1"></i>' +
-            (statusMap[st] || st) + '</span>' +
-          '</div></td>' +
-          '<td data-label="操作" class="px-4 py-3">' +
-            '<div class="action-buttons-wrapper">' + ops + '</div>' +
-          '</td>';
-        tbody.appendChild(row);
-      });
-
-      tbody.querySelectorAll('button.otr-edit').forEach(function (btn) {
-        btn.addEventListener('click', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var id = btn.getAttribute('data-id');
-          var item = (window.oneTimeRemindersCache || []).find(function (x) { return x.id === id; });
-          if (item) editOneTimeReminder(item);
-        });
-      });
-      tbody.querySelectorAll('button.otr-test').forEach(function (btn) {
-        btn.addEventListener('click', async function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var id = btn.getAttribute('data-id');
-          var res = await apiFetch('/api/one-time-reminders/' + id + '/test', { method: 'POST' });
-          var data = await res.json();
-          showToast(data.message || (data.success ? '已发送' : '失败'), data.success ? 'success' : 'error');
-        });
-      });
-      tbody.querySelectorAll('button.otr-restart').forEach(function (btn) {
-        btn.addEventListener('click', async function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var id = btn.getAttribute('data-id');
-          if (!confirm('将任务重新设为「待执行」，到点后会再次发送。继续？')) return;
-          var res = await apiFetch('/api/one-time-reminders/' + id, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'pending' })
-          });
-          var data = await res.json();
-          if (data.success) {
-            showToast('已重启任务', 'success');
-            try {
-              var otrRes = await apiFetch('/api/one-time-reminders');
-              var otrData = await otrRes.json();
-              window.oneTimeRemindersCache = (otrData && Array.isArray(otrData.items)) ? otrData.items : [];
-            } catch (_) {}
-            renderSubscriptionTable();
-          } else {
-            showToast(data.message || '重启失败', 'error');
-          }
-        });
-      });
-      tbody.querySelectorAll('button.otr-del').forEach(function (btn) {
-        btn.addEventListener('click', async function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (!confirm('确定删除这条定时提醒？')) return;
-          await apiFetch('/api/one-time-reminders/' + btn.getAttribute('data-id'), { method: 'DELETE' });
-          showToast('已删除', 'success');
-          try {
-            var otrRes = await apiFetch('/api/one-time-reminders');
-            var otrData = await otrRes.json();
-            window.oneTimeRemindersCache = (otrData && Array.isArray(otrData.items)) ? otrData.items : [];
-          } catch (_) { window.oneTimeRemindersCache = []; }
-          renderSubscriptionTable();
-          if (document.getElementById('oneTimeReminderModal') && !document.getElementById('oneTimeReminderModal').classList.contains('hidden')) {
-            loadOneTimeReminders();
-          }
-        });
-      });
+  list.forEach(function (it, index) {
+    var row = document.createElement('tr');
+    row.className = 'hover:bg-indigo-50/40';
+    var st = it.status || 'pending';
+    var chText = '全局渠道';
+    if (it.channels && it.channels.length) {
+      chText = it.channels.map(function (c) { return channelLabels[c] || c; }).join(', ');
     }
+    var timeText = (it.date || '') + ' ' + String(it.hour || '0').padStart(2, '0') + ':00';
+
+    // 操作按钮
+    var ops = '';
+    ops += '<button class="otr-edit edit btn-primary text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-edit mr-1"></i>编辑</button>';
+    if (st === 'pending') {
+      ops += '<button class="otr-test test-notify btn-info text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-paper-plane mr-1"></i>测试</button>';
+    } else {
+      ops += '<button class="otr-restart btn-success text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '" title="重新设为待执行"><i class="fas fa-redo mr-1"></i>重启任务</button>';
+    }
+    ops += '<button class="otr-del delete btn-danger text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-trash-alt mr-1"></i>删除</button>';
+
+    // 修改后的行内容：名称和时间分开显示
+    row.innerHTML =
+      '<td data-label="时间" class="px-4 py-3"><div class="td-content-wrapper">' +
+        '<div class="font-medium text-gray-900"><i class="fas fa-clock text-indigo-500 mr-1"></i>' + (it.title || '定时提醒') + '</div>' +
+        '<div class="text-sm text-gray-800 mt-1">' + timeText + '</div>' +
+        (it.content ? '<div class="text-xs text-gray-500 mt-0.5 whitespace-pre-wrap">' + it.content + '</div>' : '') +
+      '</div></td>' +
+      '<td data-label="推送" class="px-4 py-3"><div class="td-content-wrapper">' + chText + '</div></td>' +
+      '<td data-label="到期" class="px-4 py-3"><div class="td-content-wrapper">-</div></td>' +
+      '<td data-label="提醒" class="px-4 py-3"><div class="td-content-wrapper">-</div></td>' +
+      '<td data-label="状态" class="px-4 py-3"><div class="td-content-wrapper"><span class="px-2 py-1 rounded text-xs text-white ' + (statusClass[st] || '') + '">' + (statusMap[st] || st) + '</span></div></td>' +
+      '<td data-label="操作" class="px-4 py-3"><div class="td-content-wrapper flex space-x-2">' + ops + '</div></td>';
+
+    tbody.appendChild(row);
+
+    // 添加分割线（除了最后一个定时提醒）
+    if (index < list.length - 1) {
+      var dividerRow = document.createElement('tr');
+      dividerRow.className = 'border-t border-gray-200';
+      dividerRow.innerHTML = '<td colspan="6"></td>';
+      tbody.appendChild(dividerRow);
+    }
+  });
+
+  // 为按钮添加事件监听器
+  tbody.querySelectorAll('button.otr-edit').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var id = btn.getAttribute('data-id');
+      var item = (window.oneTimeRemindersCache || []).find(function (x) { return x.id === id; });
+      if (item) editOneTimeReminder(item);
+    });
+  });
+
+  tbody.querySelectorAll('button.otr-test').forEach(function (btn) {
+    btn.addEventListener('click', async function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var id = btn.getAttribute('data-id');
+      var res = await apiFetch('/api/one-time-reminders/' + id + '/test', { method: 'POST' });
+      var data = await res.json();
+      showToast(data.message || (data.success ? '已发送' : '失败'), data.success ? 'success' : 'error');
+    });
+  });
+
+  tbody.querySelectorAll('button.otr-restart').forEach(function (btn) {
+    btn.addEventListener('click', async function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var id = btn.getAttribute('data-id');
+      if (!confirm('将任务重新设为「待执行」，到点后会再次发送。继续？')) return;
+      var res = await apiFetch('/api/one-time-reminders/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'pending' })
+      });
+      var data = await res.json();
+      if (data.success) {
+        showToast('已重启任务', 'success');
+        try {
+          var otrRes = await apiFetch('/api/one-time-reminders');
+          var otrData = await otrRes.json();
+          window.oneTimeRemindersCache = (otrData && Array.isArray(otrData.items)) ? otrData.items : [];
+        } catch (_) {}
+        renderSubscriptionTable();
+      } else {
+        showToast(data.message || '重启失败', 'error');
+      }
+    });
+  });
+
+  tbody.querySelectorAll('button.otr-del').forEach(function (btn) {
+    btn.addEventListener('click', async function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!confirm('确定删除这条定时提醒？')) return;
+      await apiFetch('/api/one-time-reminders/' + btn.getAttribute('data-id'), { method: 'DELETE' });
+      showToast('已删除', 'success');
+      try {
+        var otrRes = await apiFetch('/api/one-time-reminders');
+        var otrData = await otrRes.json();
+        window.oneTimeRemindersCache = (otrData && Array.isArray(otrData.items)) ? otrData.items : [];
+      } catch (_) { window.oneTimeRemindersCache = []; }
+      renderSubscriptionTable();
+      if (document.getElementById('oneTimeReminderModal') && !document.getElementById('oneTimeReminderModal').classList.contains('hidden')) {
+        loadOneTimeReminders();
+      }
+    });
+  });
+}
 
     function resetOneTimeReminderForm() {
       var idEl = document.getElementById('otrId');
