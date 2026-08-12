@@ -758,13 +758,13 @@
               <span class="text-xs font-normal text-gray-500 ml-2">（可选；不选则跟随系统全局配置）</span>
             </label>
             <label class="inline-flex items-center cursor-pointer select-none text-sm text-gray-600">
-              <input type="checkbox" id="notifyChannelsUseGlobal" checked
+              <input type="checkbox" id="notifyChannelsUseGlobal"
                 class="form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                 onchange="window.__toggleNotifyChannelsGlobal && window.__toggleNotifyChannelsGlobal()">
               <span class="ml-2">使用系统全局渠道</span>
             </label>
           </div>
-          <div id="notifyChannelsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 opacity-50 pointer-events-none">
+          <div id="notifyChannelsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
             <!-- 由 JS 根据系统已启用渠道填充 -->
           </div>
           <p class="mt-2 text-xs text-gray-500">仅显示系统配置中已启用的渠道。勾选后，本条订阅只发到所选渠道。</p>
@@ -3482,8 +3482,8 @@ const lunarBiz = {
       if (!container || !useGlobalEl) return;
       const enabled = await loadEnabledNotifiers();
       const selectedSet = new Set(Array.isArray(selected) ? selected.map(function (x) { return String(x).toLowerCase(); }) : []);
-      const useGlobal = !selected || !Array.isArray(selected) || selected.length === 0;
-      useGlobalEl.checked = useGlobal;
+      // 默认不勾选「使用系统全局渠道」；需要跟随全局时由用户手动勾选
+      useGlobalEl.checked = false;
       container.innerHTML = '';
       if (enabled.length === 0) {
         container.innerHTML = '<span class="text-xs text-gray-400 col-span-full">系统尚未启用任何通知渠道，请先到系统配置开启</span>';
@@ -3492,7 +3492,7 @@ const lunarBiz = {
           const labelText = NOTIFY_CHANNEL_META[id] || id;
           const label = document.createElement('label');
           label.className = 'inline-flex items-center cursor-pointer select-none text-sm text-gray-700 bg-white border border-gray-200 rounded px-2 py-1.5 hover:border-indigo-300';
-          const checked = !useGlobal && selectedSet.has(id) ? ' checked' : '';
+          const checked = selectedSet.has(id) ? ' checked' : '';
           label.innerHTML = '<input type="checkbox" class="notify-channel-cb form-checkbox h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" value="' + id + '"' + checked + '>' +
             '<span class="ml-2">' + labelText + '</span>';
           container.appendChild(label);
@@ -4115,3 +4115,4 @@ const lunarBiz = {
   </script>
 </body>
 </html>
+
