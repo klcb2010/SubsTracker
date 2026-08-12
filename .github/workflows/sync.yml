@@ -1,132 +1,63 @@
 name: Sync Upstream
 
 on:
-  schedule:
-    - cron: "0 */6 * * *"
-
   workflow_dispatch:
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 jobs:
-  sync:
+  inject-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 拉取本地仓库代码
+      - name: 拉取代码
         uses: actions/checkout@v4
+
+      - name: 检查 mod 目录
+        run: |
+          echo "=== mod/ ==="
+          ls -la mod/
+          echo "=== mod/assets/ ==="
+          ls -la mod/assets/
+          test -f mod/inject-notify-channels.mjs
+          test -d mod/assets
+          test -f mod/assets/dispatch.js
+          test -f mod/assets/index.js
+          test -f mod/assets/scheduler.js
+          test -f mod/assets/subscriptions.js
+          test -f mod/assets/subscriptions.handler.js
+          test -f mod/assets/adminPage.html
+          echo "mod 目录检查通过"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
-          token: ${{ secrets.PAT_TOKEN }}
+          node-version: '22'
+          cache: 'npm'
 
-      - name: ⚙️ 配置 Git 信息
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 注入 mod 补丁
+        run: node mod/inject-notify-channels.mjs
+
+      - name: 确认注入结果
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          grep -n "normalizeNotifyChannels" src/services/notify/dispatch.js | head -3
+          grep -n "notifyChannelsUseGlobal" src/views/adminPage.html | head -3
+          grep -n "notifyChannels" src/services/scheduler.js | head -3
+          grep -n "normalizeNotifyChannels(subscription.notifyChannels)" src/data/subscriptions.js | head -3
+          grep -n "subscription.notifyChannels" src/api/handlers/subscriptions.js | head -3
+          echo "注入确认通过"
 
-          echo "当前分支:"
-          git branch --show-current
-
-      - name: 🔗 添加上游仓库
+      - name: Lint + Test
         run: |
-          git remote add upstream https://github.com/wangwangit/SubsTracker.git || true
+          npm run lint
+          npm test
 
-          echo "当前远程仓库:"
-          git remote -v
-
-      - name: 🔄 获取本地和上游最新状态
-        run: |
-          echo "正在获取 origin/master..."
-          git fetch origin master
-
-          echo "正在获取 upstream/master..."
-          git fetch upstream master
-
-          echo "获取完成"
-
-      - name: 🔍 检查上游是否有更新
-        id: upstream
-        run: |
-          COUNT=$(git rev-list --count origin/master..upstream/master)
-
-          echo "================================="
-          echo "上游领先提交数量: $COUNT"
-          echo "================================="
-
-          if [ "$COUNT" -eq 0 ]; then
-            echo "✅ 上游没有新的提交"
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "🚀 发现上游有 $COUNT 个新提交"
-            echo "准备同步..."
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 💾 备份本地 sync.yml
-        if: steps.upstream.outputs.changed == 'true'
-        run: |
-          echo "保护本地同步脚本:"
-          echo ".github/workflows/sync.yml"
-
-          mkdir -p /tmp/workflow_backup
-          cp .github/workflows/sync.yml /tmp/workflow_backup/sync.yml
-
-          echo "✅ sync.yml 已备份"
-
-      - name: 🔃 同步上游 master 分支
-        if: steps.upstream.outputs.changed == 'true'
-        run: |
-          echo "正在切换 master 分支..."
-          git checkout master
-
-          echo "正在同步上游代码..."
-          git reset --hard upstream/master
-
-          echo "✅ 上游代码同步完成"
-
-      - name: 🛡️ 恢复本地 sync.yml
-        if: steps.upstream.outputs.changed == 'true'
-        run: |
-          echo "恢复本地同步任务..."
-
-          mkdir -p .github/workflows
-
-          cp /tmp/workflow_backup/sync.yml .github/workflows/sync.yml
-
-          git add .github/workflows/sync.yml
-
-          echo "✅ sync.yml 已恢复保护"
-
-      - name: 📦 提交同步更新
-        if: steps.upstream.outputs.changed == 'true'
-        run: |
-          echo "准备提交同步结果..."
-
-          git add .
-
-          git commit -m "Sync upstream changes"
-
-          echo "正在推送到自己的 master..."
-
-          git push origin master --force-with-lease
-
-          echo "✅ 上游同步提交完成"
-
-      - name: 🚀 触发部署 workflow
-        if: steps.upstream.outputs.changed == 'true'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.PAT_TOKEN }}
-          script: |
-            console.log("正在触发 deploy.yml...");
-
-            await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'deploy.yml',
-              ref: 'master'
-            });
-
-            console.log("✅ deploy.yml 已触发");
+      - name: 部署到 Cloudflare Workers
+        run: npm run deploy:safe
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
