@@ -1867,154 +1867,132 @@ const lunarBiz = {
     }
 
     function appendOneTimeReminderRows(tbody) {
-      if (!tbody) return;
-      var list = Array.isArray(window.oneTimeRemindersCache) ? window.oneTimeRemindersCache.slice() : [];
-      var searchInput = document.getElementById('searchKeyword');
-      var keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
-      var statusSelect = document.getElementById('statusFilter');
-      var selectedStatus = statusSelect ? statusSelect.value : '';
-      var modeSelect = document.getElementById('modeFilter');
-      var selectedMode = modeSelect ? modeSelect.value : '';
-      if (selectedMode) return;
+  if (!tbody) return;
 
-      if (keyword) {
-        list = list.filter(function (it) {
-          var hay = [it.title, it.content, it.date].filter(Boolean).join(' ').toLowerCase();
-          return hay.indexOf(keyword) !== -1;
-        });
-      }
-      if (selectedStatus === 'disabled') {
-        list = list.filter(function (it) { return it.status === 'cancelled' || it.status === 'failed'; });
-      } else if (selectedStatus) {
-        return;
-      }
+  let list = Array.isArray(window.oneTimeRemindersCache) ? window.oneTimeRemindersCache.slice() : [];
 
-      var statusMap = {
-        pending: '待执行',
-        sent: '已执行',
-        failed: '执行失败',
-        cancelled: '已取消'
-      };
-      var statusClass = {
-        pending: 'bg-indigo-500',
-        sent: 'bg-green-500',
-        failed: 'bg-red-500',
-        cancelled: 'bg-gray-500'
-      };
-      var channelLabels = {
-        telegram: 'Telegram', notifyx: 'NotifyX', webhook: 'Webhook', wechatbot: '企业微信',
-        email: '邮件', bark: 'Bark', gotify: 'Gotify', serverchan: 'Server酱',
-        pushplus: 'PushPlus', ntfy: 'ntfy'
-      };
+  const searchInput = document.getElementById('searchKeyword');
+  const keyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const statusSelect = document.getElementById('statusFilter');
+  const selectedStatus = statusSelect ? statusSelect.value : '';
+  const modeSelect = document.getElementById('modeFilter');
+  const selectedMode = modeSelect ? modeSelect.value : '';
 
-      list.forEach(function (it) {
-        var row = document.createElement('tr');
-        row.className = 'hover:bg-indigo-50/40';
-        var st = it.status || 'pending';
-        var chText = '全局渠道';
-        if (it.channels && it.channels.length) {
-          chText = it.channels.map(function (c) { return channelLabels[c] || c; }).join(', ');
-        }
-        var timeText = (it.date || '') + ' ' + String(it.hour || '0').padStart(2, '0') + ':00';
+  if (selectedMode) return;
 
-        // 操作：与订阅列表相同 btn-* 类
-        var ops = '';
-        ops += '<button class="otr-edit edit btn-primary text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-edit mr-1"></i>编辑</button>';
-        if (st === 'pending') {
-          ops += '<button class="otr-test test-notify btn-info text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-paper-plane mr-1"></i>测试</button>';
-        } else {
-          ops += '<button class="otr-restart btn-success text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '" title="重新设为待执行"><i class="fas fa-redo mr-1"></i>重启任务</button>';
-        }
-        ops += '<button class="otr-del delete btn-danger text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-trash-alt mr-1"></i>删除</button>';
+  if (keyword) {
+    list = list.filter(it => {
+      const hay = [it.title, it.content, it.date, it.hour].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(keyword);
+    });
+  }
 
-        // 4 个可见信息行：时间 / 状态 / 推送 / 操作（名称合并进时间；提醒列隐藏）
-        // 桌面列：名称 | 推送 | 到期 | 提醒(隐) | 状态 | 操作
-        // 移动端 data-label：时间 / 推送 / 状态 / 操作（名称并入时间，提醒隐藏）
-        row.innerHTML =
-          '<td data-label="时间" class="px-4 py-3"><div class="td-content-wrapper">' +
-            '<div class="font-medium text-gray-900"><i class="fas fa-clock text-indigo-500 mr-1"></i>' + (it.title || '定时提醒') + '</div>' +
-            (it.content ? '<div class="text-xs text-gray-500 mt-0.5 whitespace-pre-wrap">' + it.content + '</div>' : '') +
-            '<div class="text-sm text-gray-800 mt-1">' + timeText + '</div>' +
-          '</div></td>' +
-          '<td data-label="推送" class="px-4 py-3"><div class="td-content-wrapper">' +
-            '<div class="text-sm text-gray-800"><i class="fas fa-paper-plane text-indigo-400 mr-1"></i>' + chText + '</div>' +
-          '</div></td>' +
-          '<td data-label="到期" class="px-4 py-3" style="display:none" aria-hidden="true"></td>' +
-          '<td data-label="提醒" class="px-4 py-3" style="display:none" aria-hidden="true"></td>' +
-          '<td data-label="状态" class="px-4 py-3"><div class="td-content-wrapper">' +
-            '<span class="px-2 py-1 text-xs font-medium rounded-full text-white ' + (statusClass[st] || 'bg-gray-500') + '">' +
-            '<i class="fas ' + (st === 'pending' ? 'fa-hourglass-half' : (st === 'sent' ? 'fa-check-circle' : 'fa-info-circle')) + ' mr-1"></i>' +
-            (statusMap[st] || st) + '</span>' +
-          '</div></td>' +
-          '<td data-label="操作" class="px-4 py-3">' +
-            '<div class="action-buttons-wrapper">' + ops + '</div>' +
-          '</td>';
-        tbody.appendChild(row);
-      });
+  if (selectedStatus) {
+    list = list.filter(it => {
+      if (selectedStatus === 'pending') return it.status === 'pending';
+      if (selectedStatus === 'sent') return it.status === 'sent';
+      if (selectedStatus === 'failed') return it.status === 'failed';
+      if (selectedStatus === 'cancelled') return it.status === 'cancelled';
+      return true;
+    });
+  }
 
-      tbody.querySelectorAll('button.otr-edit').forEach(function (btn) {
-        btn.addEventListener('click', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var id = btn.getAttribute('data-id');
-          var item = (window.oneTimeRemindersCache || []).find(function (x) { return x.id === id; });
-          if (item) editOneTimeReminder(item);
-        });
-      });
-      tbody.querySelectorAll('button.otr-test').forEach(function (btn) {
-        btn.addEventListener('click', async function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var id = btn.getAttribute('data-id');
-          var res = await apiFetch('/api/one-time-reminders/' + id + '/test', { method: 'POST' });
-          var data = await res.json();
-          showToast(data.message || (data.success ? '已发送' : '失败'), data.success ? 'success' : 'error');
-        });
-      });
-      tbody.querySelectorAll('button.otr-restart').forEach(function (btn) {
-        btn.addEventListener('click', async function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var id = btn.getAttribute('data-id');
-          if (!confirm('将任务重新设为「待执行」，到点后会再次发送。继续？')) return;
-          var res = await apiFetch('/api/one-time-reminders/' + id, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'pending' })
-          });
-          var data = await res.json();
-          if (data.success) {
-            showToast('已重启任务', 'success');
-            try {
-              var otrRes = await apiFetch('/api/one-time-reminders');
-              var otrData = await otrRes.json();
-              window.oneTimeRemindersCache = (otrData && Array.isArray(otrData.items)) ? otrData.items : [];
-            } catch (_) {}
-            renderSubscriptionTable();
-          } else {
-            showToast(data.message || '重启失败', 'error');
-          }
-        });
-      });
-      tbody.querySelectorAll('button.otr-del').forEach(function (btn) {
-        btn.addEventListener('click', async function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (!confirm('确定删除这条定时提醒？')) return;
-          await apiFetch('/api/one-time-reminders/' + btn.getAttribute('data-id'), { method: 'DELETE' });
-          showToast('已删除', 'success');
-          try {
-            var otrRes = await apiFetch('/api/one-time-reminders');
-            var otrData = await otrRes.json();
-            window.oneTimeRemindersCache = (otrData && Array.isArray(otrData.items)) ? otrData.items : [];
-          } catch (_) { window.oneTimeRemindersCache = []; }
-          renderSubscriptionTable();
-          if (document.getElementById('oneTimeReminderModal') && !document.getElementById('oneTimeReminderModal').classList.contains('hidden')) {
-            loadOneTimeReminders();
-          }
-        });
-      });
-    }
+  tbody.innerHTML = '';
+
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-center py-8 text-gray-500">暂无定时提醒</td>
+      </tr>
+    `;
+    return;
+  }
+
+  const channelLabels = {
+    telegram: 'Telegram',
+    notifyx: 'NotifyX',
+    webhook: 'Webhook',
+    wechatbot: 'WeChat',
+    email: 'Email',
+    bark: 'Bark',
+    gotify: 'Gotify',
+    serverchan: 'Server酱',
+    pushplus: 'PushPlus',
+    ntfy: 'ntfy'
+  };
+
+  const statusBadge = (status) => {
+    if (status === 'sent') return '<span class="px-2 py-1 text-xs font-medium rounded-full text-white bg-green-500">已执行</span>';
+    if (status === 'failed') return '<span class="px-2 py-1 text-xs font-medium rounded-full text-white bg-red-500">执行失败</span>';
+    if (status === 'cancelled') return '<span class="px-2 py-1 text-xs font-medium rounded-full text-white bg-gray-500">已取消</span>';
+    return '<span class="px-2 py-1 text-xs font-medium rounded-full text-white bg-yellow-500">待执行</span>';
+  };
+
+  const fragment = document.createDocumentFragment();
+
+  list.sort((a, b) => {
+    const ta = new Date(`${a.date}T${String(a.hour || '00').padStart(2, '0')}:00:00`).getTime();
+    const tb = new Date(`${b.date}T${String(b.hour || '00').padStart(2, '0')}:00:00`).getTime();
+    return ta - tb;
+  });
+
+  list.forEach(item => {
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50';
+
+    const channels = Array.isArray(item.channels) && item.channels.length
+      ? item.channels.map(c => channelLabels[c] || c).join(' / ')
+      : '全局渠道';
+
+    const title = item.title || '定时提醒';
+    const content = item.content || '';
+    const timeText = `${item.date || ''} ${String(item.hour || '00').padStart(2, '0')}:00`;
+
+    row.innerHTML = `
+      <td data-label="名称" class="px-4 py-3">
+        <div class="td-content-wrapper">
+          <div class="text-sm font-medium text-gray-900">${escapeHtml(title)}</div>
+          <div class="text-xs text-gray-500 mt-1">${escapeHtml(content)}</div>
+        </div>
+      </td>
+      <td data-label="时间" class="px-4 py-3">
+        <div class="td-content-wrapper text-sm text-gray-900">${escapeHtml(timeText)}</div>
+      </td>
+      <td data-label="推送" class="px-4 py-3">
+        <div class="td-content-wrapper">
+          <div class="flex items-center gap-1 text-sm text-gray-800">
+            <i class="fas fa-paper-plane text-indigo-400 mr-1"></i>
+            <span>${escapeHtml(channels)}</span>
+          </div>
+        </div>
+      </td>
+      <td data-label="状态" class="px-4 py-3">
+        <div class="td-content-wrapper">${statusBadge(item.status)}</div>
+      </td>
+      <td data-label="操作" class="px-4 py-3">
+        <div class="action-buttons-wrapper">
+          <button class="edit btn-primary text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="${item.id}">
+            <i class="fas fa-edit mr-1"></i>编辑
+          </button>
+          <button class="test-notify btn-info text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="${item.id}">
+            <i class="fas fa-paper-plane mr-1"></i>测试
+          </button>
+          <button class="delete btn-danger text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="${item.id}">
+            <i class="fas fa-trash-alt mr-1"></i>删除
+          </button>
+        </div>
+      </td>
+    `;
+
+    fragment.appendChild(row);
+  });
+
+  tbody.appendChild(fragment);
+
+  document.querySelectorAll('.edit').forEach(button => button.addEventListener('click', editOneTimeReminder));
+  document.querySelectorAll('.test-notify').forEach(button => button.addEventListener('click', testOneTimeReminder));
+  document.querySelectorAll('.delete').forEach(button => button.addEventListener('click', deleteOneTimeReminder));
+	  }
 
     function resetOneTimeReminderForm() {
       var idEl = document.getElementById('otrId');
