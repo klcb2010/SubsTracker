@@ -39,7 +39,7 @@ export async function processOneTimeReminders(env, config) {
         const dueUtcGuess = Date.parse(`${item.date}T${itemHour}:00:00+08:00`);
         const lagMs = Date.now() - (Number.isFinite(dueUtcGuess) ? dueUtcGuess : Date.now());
         if (lagMs > 48 * 3600 * 1000) {
-          item.status = 'cancelled';
+          item.status = /** @type {'cancelled'} */ ('cancelled');
           item.lastError = '超过 48 小时未发送，已自动取消';
           await otrRepo.save(env, item);
           continue;
@@ -65,17 +65,17 @@ export async function processOneTimeReminders(env, config) {
         }
       );
       if (result.successCount > 0) {
-        item.status = 'sent';
+        item.status = /** @type {'sent'} */ ('sent');
         item.sentAt = new Date().toISOString();
         item.lastError = result.failedCount > 0 ? '部分渠道失败' : null;
         sent++;
       } else {
-        item.status = 'failed';
+        item.status = /** @type {'failed'} */ ('failed');
         item.lastError = result.attempted === 0 ? '无可用渠道' : '全部渠道发送失败';
         failed++;
       }
     } catch (err) {
-      item.status = 'failed';
+      item.status = /** @type {'failed'} */ ('failed');
       item.lastError = err && err.message ? err.message : String(err);
       failed++;
     }
