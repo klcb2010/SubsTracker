@@ -503,13 +503,10 @@
               <th scope="col" class="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider" style="width: 13%;">
                 类型
               </th>
-              <th scope="col" class="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider" style="width: 18%;">
+              <th scope="col" class="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider" style="width: 20%;">
                 到期 <i class="fas fa-sort-up ml-1 text-indigo-500" title="按到期时间升序排列"></i>
               </th>
-              <th scope="col" class="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider" style="width: 10%;">
-                金额
-              </th>
-              <th scope="col" class="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider" style="width: 13%;">
+              <th scope="col" class="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider" style="width: 14%;">
                 提醒
               </th>
               <th scope="col" class="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider" style="width: 10%;">
@@ -564,32 +561,6 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-              费用设置 <span class="text-gray-400 text-xs ml-1">可选</span>
-            </label>
-            <div class="flex space-x-2">
-              <div class="w-24 shrink-0"> 
-                <select id="currency" class="h-10 w-full px-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-sm">
-                  <option value="CNY" selected>CNY (¥)</option>
-                  <option value="USD">USD ($)</option>   // 美元
-                  <option value="HKD">HKD (HK$)</option> // 港币
-                  <option value="TWD">TWD (NT$)</option> // 新台币
-                  <option value="JPY">JPY (¥)</option>   // 日元
-                  <option value="EUR">EUR (€)</option>   // 欧元
-                  <option value="GBP">GBP (£)</option>   // 英镑
-                  <option value="KRW">KRW (₩)</option>   // 韩元
-                  <option value="TRY">TRY (₺)</option>   // 土耳其里拉
-                </select>
-              </div>
-              <div class="relative flex-1">
-                <input type="number" id="amount" step="0.01" min="0" placeholder="例如: 15.00"
-                  class="h-10 w-full px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
-              </div>
-            </div>
-            <p class="mt-1 text-xs text-gray-500">用于统计支出和生成仪表盘</p>
-          </div>
-
           <div>
              <div class="flex justify-between items-center mb-1">
                 <label for="subscriptionMode" class="block text-sm font-medium text-gray-700">订阅模式</label>
@@ -1812,14 +1783,6 @@ const lunarBiz = {
         };
         const currencySymbol = currencySymbols[subscription.currency] || '¥';
 
-        const hasAmount = subscription.amount !== null && subscription.amount !== undefined && !Number.isNaN(Number(subscription.amount));
-        const amountHtml = hasAmount
-          ? '<div class="flex items-center gap-1">' +
-              '<span class="text-xs text-gray-500 font-bold">' + currencySymbol + '</span>' +
-              '<span class="text-sm font-medium text-gray-900">' + Number(subscription.amount).toFixed(2) + '</span>' +
-            '</div>'
-          : '<span class="text-xs text-gray-400">未设置</span>';
-
         row.innerHTML =
           '<td data-label="名称" class="px-4 py-3"><div class="td-content-wrapper">' +
             nameHtml +
@@ -1840,9 +1803,6 @@ const lunarBiz = {
             lunarHtml +
             '<div class="text-xs text-gray-500 mt-1">' + daysLeftText + '</div>' +
             startDateHtml +
-          '</div></td>' +
-          '<td data-label="金额" class="px-4 py-3"><div class="td-content-wrapper">' +
-            amountHtml +
           '</div></td>' +
           '<td data-label="提醒" class="px-4 py-3"><div class="td-content-wrapper">' +
             reminderHtml +
@@ -1920,32 +1880,48 @@ const lunarBiz = {
         });
       }
       if (selectedStatus === 'disabled') {
-        list = list.filter(function (it) { return it.status === 'cancelled'; });
+        list = list.filter(function (it) { return it.status === 'cancelled' || it.status === 'failed'; });
       } else if (selectedStatus) {
         // 订阅状态筛选时默认不显示定时提醒，避免概念混淆
         return;
       }
 
-      var statusMap = { pending: '待发送', sent: '已发送', failed: '失败', cancelled: '已取消' };
+      // 状态文案：待执行 / 已执行（失败、取消归入已结束展示）
+      var statusMap = {
+        pending: '待执行',
+        sent: '已执行',
+        failed: '执行失败',
+        cancelled: '已取消'
+      };
       var statusClass = {
         pending: 'bg-indigo-500',
         sent: 'bg-green-500',
         failed: 'bg-red-500',
         cancelled: 'bg-gray-500'
       };
+      var channelLabels = {
+        telegram: 'Telegram', notifyx: 'NotifyX', webhook: 'Webhook', wechatbot: '企业微信',
+        email: '邮件', bark: 'Bark', gotify: 'Gotify', serverchan: 'Server酱',
+        pushplus: 'PushPlus', ntfy: 'ntfy'
+      };
 
       list.forEach(function (it) {
         var row = document.createElement('tr');
         row.className = 'hover:bg-indigo-50/40';
         var st = it.status || 'pending';
-        var ch = (it.channels && it.channels.length) ? it.channels.join(', ') : '全局渠道';
+        var chText = '全局渠道';
+        if (it.channels && it.channels.length) {
+          chText = it.channels.map(function (c) { return channelLabels[c] || c; }).join(', ');
+        }
+        // 操作按钮：与订阅列表同一套 btn-* 样式与尺寸
         var ops = '';
         if (st === 'pending') {
-          ops += '<button type="button" class="otr-edit text-white px-2 py-1 rounded text-xs bg-indigo-600 hover:bg-indigo-700 whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-edit mr-1"></i>编辑</button>';
-          ops += '<button type="button" class="otr-test text-white px-2 py-1 rounded text-xs bg-sky-600 hover:bg-sky-700 whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-paper-plane mr-1"></i>测试</button>';
+          ops += '<button class="otr-edit edit text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '" title="编辑"><i class="fas fa-edit mr-1"></i>编辑</button>';
+          ops += '<button class="otr-test test-notify btn-info text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '" title="测试发送"><i class="fas fa-paper-plane mr-1"></i>测试</button>';
         }
-        ops += '<button type="button" class="otr-del text-white px-2 py-1 rounded text-xs bg-red-500 hover:bg-red-600 whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-trash-alt mr-1"></i>删除</button>';
+        ops += '<button class="otr-del delete btn-danger text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '" title="删除"><i class="fas fa-trash-alt mr-1"></i>删除</button>';
 
+        // 列：名称 | 类型 | 到期(触发时间) | 提醒(推送方式) | 状态 | 操作
         row.innerHTML =
           '<td class="px-4 py-3">' +
             '<div class="font-medium text-gray-900"><i class="fas fa-clock text-indigo-500 mr-1"></i>' + (it.title || '定时提醒') + '</div>' +
@@ -1953,9 +1929,8 @@ const lunarBiz = {
           '</td>' +
           '<td class="px-4 py-3 text-sm text-gray-600">定时提醒</td>' +
           '<td class="px-4 py-3 text-sm text-gray-800">' + it.date + ' ' + String(it.hour).padStart(2, '0') + ':00</td>' +
-          '<td class="px-4 py-3 text-sm text-gray-400">—</td>' +
-          '<td class="px-4 py-3 text-sm text-gray-600">' + ch + '</td>' +
-          '<td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full text-white ' + (statusClass[st] || 'bg-gray-500') + '">' + (statusMap[st] || st) + '</span></td>' +
+          '<td class="px-4 py-3 text-sm text-gray-600"><span class="text-xs text-gray-500">推送：</span>' + chText + '</td>' +
+          '<td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium rounded-full text-white ' + (statusClass[st] || 'bg-gray-500') + '"><i class="fas ' + (st === 'pending' ? 'fa-hourglass-half' : (st === 'sent' ? 'fa-check-circle' : 'fa-info-circle')) + ' mr-1"></i>' + (statusMap[st] || st) + '</span></td>' +
           '<td class="px-4 py-3"><div class="flex flex-wrap gap-1">' + ops + '</div></td>';
         tbody.appendChild(row);
       });
@@ -2204,14 +2179,7 @@ const lunarBiz = {
             '                <input type="date" id="renewPaymentDate" value="' + today + '"' +
             '                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">' +
             '            </div>' +
-            '' +
-            '            <div>' +
-            '                <label class="block text-sm font-medium text-gray-700 mb-1">支付金额 ' + currencyLabel + '</label>' +
-            '                <input type="number" id="renewAmount" value="' + defaultAmount + '" step="0.01" min="0"' +
-            '                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">' +
-            '            </div>' +
-            '' +
-            '            <div>' +
+            '' +            '            <div>' +
             '                <div class="flex justify-between items-center mb-1">' +
             '                    <label class="block text-sm font-medium text-gray-700">续订周期数</label>' +
             '                    ' + lunarBadge + 
@@ -2326,7 +2294,7 @@ const lunarBiz = {
 
         const options = {
             paymentDate: document.getElementById('renewPaymentDate').value,
-            amount: parseFloat(document.getElementById('renewAmount').value) || 0,
+            amount: 0,
             periodMultiplier: parseInt(document.getElementById('renewPeriodMultiplier').value) || 1,
             note: document.getElementById('renewNote').value || '手动续订'
         };
@@ -2439,7 +2407,7 @@ const lunarBiz = {
                             </div>
                             <div class="flex items-center gap-3">
                                 <div class="text-right">
-                                    <div class="text-lg font-bold text-gray-900">${getCurrencySymbol(payment.currency || subscription.currency)}${Number(payment.amount || 0).toFixed(2)}</div>
+                                    
                                 </div>
                                 <div class="flex gap-1">
                                     <button onclick="editPaymentRecord('${subscription.id}', '${payment.id}')"
@@ -2473,15 +2441,9 @@ const lunarBiz = {
                     </div>
 
                     <div class="mt-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 mb-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="text-center">
-                                <div class="text-sm text-gray-600">累计支出</div>
-                                <div class="text-2xl font-bold text-purple-600">${getCurrencySymbol(subscription.currency)}${totalAmount.toFixed(2)}</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-sm text-gray-600">支付次数</div>
-                                <div class="text-2xl font-bold text-blue-600">${paymentCount}</div>
-                            </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-600">支付次数</div>
+                            <div class="text-2xl font-bold text-blue-600">${paymentCount}</div>
                         </div>
                     </div>
 
@@ -2591,12 +2553,6 @@ const lunarBiz = {
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">支付金额 (${subscription.currency || 'CNY'} ${getCurrencySymbol(payment.currency || subscription.currency)})</label>
-                            <input type="number" id="editPaymentAmount" value="${payment.amount}" step="0.01" min="0"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-
-                        <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
                             <input type="text" id="editPaymentNote" value="${escapeHtml(payment.note || '')}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
@@ -2639,7 +2595,7 @@ const lunarBiz = {
         const currentSubscription = subscriptionsCache.find(item => item.id === subscriptionId);
         const paymentData = {
             date: document.getElementById('editPaymentDate').value,
-            amount: parseFloat(document.getElementById('editPaymentAmount').value) || 0,
+            amount: 0,
             currency: currentSubscription?.currency || 'CNY',
             note: document.getElementById('editPaymentNote').value
         };
@@ -2737,7 +2693,7 @@ const lunarBiz = {
       document.body.classList.add('overflow-hidden'); // 禁止背景滚动
 
       document.getElementById('subscriptionForm').reset();
-      document.getElementById('currency').value = 'CNY'; // 默认设置为CNY
+      /* currency removed */ // 默认设置为CNY
       document.getElementById('subscriptionId').value = '';
       clearFieldErrors();
 
@@ -2787,9 +2743,8 @@ const lunarBiz = {
         document.getElementById('customType').value = subscription.customType || '';
         document.getElementById('category').value = subscription.category || '';
         document.getElementById('notes').value = subscription.notes || '';
-        document.getElementById('amount').value =
-          subscription.amount !== null && subscription.amount !== undefined ? subscription.amount : '';
-        document.getElementById('currency').value = subscription.currency || 'CNY';
+        /* amount removed */
+        /* currency removed */
         document.getElementById('isActive').checked = subscription.isActive !== false;
         document.getElementById('autoRenew').checked = subscription.autoRenew !== false;
         document.getElementById('startDate').value = subscription.startDate
@@ -3686,8 +3641,8 @@ const lunarBiz = {
         category: document.getElementById('category').value.trim(),
         subscriptionMode: document.getElementById('subscriptionMode').value, // 新增修改，表单提交时带上 subscriptionMode 字段
         notes: document.getElementById('notes').value.trim() || '',
-        currency: document.getElementById('currency').value, // 新增修改，表单提交时带上 currency 字段
-        amount: document.getElementById('amount').value === '' ? null : parseFloat(document.getElementById('amount').value),
+        currency: 'CNY',
+        amount: null,
         isActive: document.getElementById('isActive').checked,
         autoRenew: document.getElementById('autoRenew').checked,
         startDate: document.getElementById('startDate').value,
@@ -3762,8 +3717,8 @@ const lunarBiz = {
           document.getElementById('customType').value = subscription.customType || '';
           document.getElementById('category').value = subscription.category || '';
           document.getElementById('notes').value = subscription.notes || '';
-          document.getElementById('amount').value = subscription.amount !== null && subscription.amount !== undefined ? subscription.amount : '';
-          document.getElementById('currency').value = subscription.currency || 'CNY'; // 默认设置为 CNY
+          /* amount removed */
+          /* currency removed */ // 默认设置为 CNY
           document.getElementById('isActive').checked = subscription.isActive !== false;
           document.getElementById('autoRenew').checked = subscription.autoRenew !== false;
           document.getElementById('startDate').value = subscription.startDate ? formatDateInputInTimezone(subscription.startDate, globalTimezone) : '';
@@ -3937,7 +3892,7 @@ const lunarBiz = {
           list.innerHTML = '<div class="text-gray-400">暂无定时提醒</div>';
           return;
         }
-        const statusMap = { pending:'待发送', sent:'已发送', failed:'失败', cancelled:'已取消' };
+        const statusMap = { pending:'待执行', sent:'已执行', failed:'执行失败', cancelled:'已取消' };
         window.oneTimeRemindersCache = items;
         list.innerHTML = items.map(function (it) {
           const ch = (it.channels && it.channels.length) ? it.channels.join(',') : '全局';
@@ -4479,3 +4434,5 @@ const lunarBiz = {
 
 </body>
 </html>
+
+
