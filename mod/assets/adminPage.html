@@ -1866,7 +1866,8 @@ const lunarBiz = {
       }
     }
 
-    function appendOneTimeReminderRows(tbody) {
+    // 修改后的 appendOneTimeReminderRows 函数
+function appendOneTimeReminderRows(tbody) {
   if (!tbody) return;
   var list = Array.isArray(window.oneTimeRemindersCache) ? window.oneTimeRemindersCache.slice() : [];
   var searchInput = document.getElementById('searchKeyword');
@@ -1927,26 +1928,24 @@ const lunarBiz = {
     }
     ops += '<button class="otr-del delete btn-danger text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-trash-alt mr-1"></i>删除</button>';
 
-    // 修改后的行内容：名称和时间分开显示
+    // 修改后的行内容：名称和时间分开显示，且只保留推送、状态、操作列
     row.innerHTML =
-      '<td data-label="时间" class="px-4 py-3"><div class="td-content-wrapper">' +
-        '<div class="font-medium text-gray-900"><i class="fas fa-clock text-indigo-500 mr-1"></i>' + (it.title || '定时提醒') + '</div>' +
+      '<td data-label="名称" class="px-4 py-3"><div class="td-content-wrapper">' +
+        '<div class="font-medium text-gray-900">' + (it.title || '定时提醒') + '</div>' +
         '<div class="text-sm text-gray-800 mt-1">' + timeText + '</div>' +
         (it.content ? '<div class="text-xs text-gray-500 mt-0.5 whitespace-pre-wrap">' + it.content + '</div>' : '') +
       '</div></td>' +
       '<td data-label="推送" class="px-4 py-3"><div class="td-content-wrapper">' + chText + '</div></td>' +
-      '<td data-label="到期" class="px-4 py-3"><div class="td-content-wrapper">-</div></td>' +
-      '<td data-label="提醒" class="px-4 py-3"><div class="td-content-wrapper">-</div></td>' +
       '<td data-label="状态" class="px-4 py-3"><div class="td-content-wrapper"><span class="px-2 py-1 rounded text-xs text-white ' + (statusClass[st] || '') + '">' + (statusMap[st] || st) + '</span></div></td>' +
       '<td data-label="操作" class="px-4 py-3"><div class="td-content-wrapper flex space-x-2">' + ops + '</div></td>';
 
     tbody.appendChild(row);
 
-    // 添加分割线（除了最后一个定时提醒）
+    // 添加淡蓝色分割线（除了最后一个定时提醒）
     if (index < list.length - 1) {
       var dividerRow = document.createElement('tr');
-      dividerRow.className = 'border-t border-gray-200';
-      dividerRow.innerHTML = '<td colspan="6"></td>';
+      dividerRow.className = 'border-t border-blue-200';
+      dividerRow.innerHTML = '<td colspan="4"></td>';
       tbody.appendChild(dividerRow);
     }
   });
@@ -2018,7 +2017,6 @@ const lunarBiz = {
     });
   });
 }
-
     function resetOneTimeReminderForm() {
       var idEl = document.getElementById('otrId');
       if (idEl) idEl.value = '';
