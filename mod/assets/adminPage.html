@@ -3942,52 +3942,19 @@ const lunarBiz = {
         const statusMap = { pending:'待执行', sent:'已执行', failed:'执行失败', cancelled:'已取消' };
         window.oneTimeRemindersCache = items;
         list.innerHTML = items.map(function (it) {
-          const ch = (it.channels && it.channels.length) ? it.channels.join(', ') : '全局渠道';
-          const statusMapClass = {
-            pending: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30',
-            sent: 'bg-green-500/20 text-green-300 border border-green-500/30',
-            failed: 'bg-red-500/20 text-red-300 border border-red-500/30',
-            cancelled: 'bg-gray-500/20 text-gray-400 border border-gray-600/30'
-          };
-          const statusText = statusMap[it.status]||it.status;
-          const statusCls = statusMapClass[it.status] || statusMapClass.pending;
-          // 名称 = 标题 + 内容
-          return '<div class="rounded-lg bg-[#1e293b] border border-gray-700/60 overflow-hidden">' +
-            // 名称
-            '<div class="flex px-4 py-3 border-b border-gray-700/50">' +
-              '<span class="text-gray-400 text-sm w-12 shrink-0">名称</span>' +
-              '<div class="flex-1 min-w-0">' +
-                '<div class="text-white text-sm font-medium truncate">' + escapeHtml(it.title||'定时提醒') + '</div>' +
-                '<div class="text-gray-400 text-xs mt-0.5 whitespace-pre-wrap break-words">' + escapeHtml(it.content||'') + '</div>' +
-              '</div>' +
-            '</div>' +
-            // 时间 = 实际提醒时间
-            '<div class="flex px-4 py-3 border-b border-gray-700/50">' +
-              '<span class="text-gray-400 text-sm w-12 shrink-0">时间</span>' +
-              '<div class="flex-1 text-white text-sm">' +
-                '<div class="flex items-center gap-2"><i class="fas fa-clock text-blue-400 text-xs"></i>' + escapeHtml(it.date) + ' ' + escapeHtml(it.hour) + ':00' + '</div>' +
-              '</div>' +
-            '</div>' +
-            // 推送
-            '<div class="flex px-4 py-3 border-b border-gray-700/50">' +
-              '<span class="text-gray-400 text-sm w-12 shrink-0">推送</span>' +
-              '<div class="flex-1 text-white text-sm flex items-center gap-2"><i class="fas fa-paper-plane text-blue-400 text-xs"></i>' + escapeHtml(ch) + (it.lastError ? '<span class="text-red-400 text-xs ml-2">'+escapeHtml(it.lastError)+'</span>' : '') + '</div>' +
-            '</div>' +
-            // 状态
-            '<div class="flex px-4 py-3 border-b border-gray-700/50 items-center">' +
-              '<span class="text-gray-400 text-sm w-12 shrink-0">状态</span>' +
-              '<div class="flex-1"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs ' + statusCls + '"><i class="fas fa-hourglass-half mr-1"></i>' + escapeHtml(statusText) + '</span></div>' +
-            '</div>' +
-            // 操作
-            '<div class="flex px-4 py-3 items-center">' +
-              '<span class="text-gray-400 text-sm w-12 shrink-0">操作</span>' +
-              '<div class="flex-1 flex gap-2">' +
-                '<button type="button" data-otr-edit="'+it.id+'" class="inline-flex items-center px-3 py-1 rounded-md text-xs bg-[#8b5cf6] hover:bg-[#7c3aed] text-white"><i class="fas fa-edit mr-1"></i>编辑</button>' +
-                '<button type="button" data-otr-test="'+it.id+'" class="inline-flex items-center px-3 py-1 rounded-md text-xs bg-[#3b82f6] hover:bg-[#2563eb] text-white"><i class="fas fa-paper-plane mr-1"></i>测试</button>' +
-                '<button type="button" data-otr-del="'+it.id+'" class="inline-flex items-center px-3 py-1 rounded-md text-xs bg-[#ef4444] hover:bg-[#dc2626] text-white"><i class="fas fa-trash mr-1"></i>删除</button>' +
-              '</div>' +
-            '</div>' +
-          '</div>';
+          const ch = (it.channels && it.channels.length) ? it.channels.join(',') : '全局';
+          return '<div class="border border-gray-200 rounded-md p-3 bg-white">' +
+            '<div class="flex justify-between gap-2">' +
+            '<div class="font-medium text-gray-800">' + (it.title||'定时提醒') +
+            ' <span class="text-xs text-gray-500">'+it.date+' '+it.hour+':00</span></div>' +
+            '<span class="text-xs px-2 py-0.5 rounded bg-gray-100">'+(statusMap[it.status]||it.status)+'</span></div>' +
+            '<div class="text-gray-600 mt-1 whitespace-pre-wrap">'+(it.content||'')+'</div>' +
+            '<div class="text-xs text-gray-400 mt-1">渠道: '+ch+(it.lastError?(' · '+it.lastError):'')+'</div>' +
+            '<div class="mt-2 flex gap-2">' +
+            (it.status==='pending' ? '<button type="button" data-otr-edit="'+it.id+'" class="text-xs text-indigo-600 hover:underline">编辑</button>' : '') +
+            (it.status==='pending' ? '<button type="button" data-otr-test="'+it.id+'" class="text-xs text-sky-600 hover:underline">测试发送</button>' : '') +
+            '<button type="button" data-otr-del="'+it.id+'" class="text-xs text-red-600 hover:underline">删除</button>' +
+            '</div></div>';
         }).join('');
         list.querySelectorAll('[data-otr-edit]').forEach(function (btn) {
           btn.addEventListener('click', function () {
@@ -4514,4 +4481,3 @@ const lunarBiz = {
 
 </body>
 </html>
-
