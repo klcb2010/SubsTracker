@@ -100,20 +100,22 @@ export async function handleOneTimeReminderRoutes(request, env, path) {
   if (id && method === 'PUT') {
     const existing = await otrRepo.getById(env, id);
     if (!existing) return json({ success: false, message: '不存在' }, 404);
-    if (existing.status !== 'pending') {
-      return json({ success: false, message: '仅待发送状态可编辑' }, 400);
-    }
     let body;
     try {
       body = await request.json();
     } catch {
       return json({ success: false, message: '无效 JSON' }, 400);
     }
-    if (body.title != null) existing.title = String(body.title).trim() || existing.title;
+    let rearm = false;
+    if (body.title != null) {
+      existing.title = String(body.title).trim() || existing.title;
+      rearm = true;
+    }
     if (body.content != null) {
       const c = String(body.content).trim();
       if (!c) return json({ success: false, message: '内容不能为空' }, 400);
       existing.content = c;
+      rearm = true;
     }
     if (body.date != null) {
       const date = String(body.date).trim();
@@ -121,6 +123,7 @@ export async function handleOneTimeReminderRoutes(request, env, path) {
         return json({ success: false, message: '日期格式应为 YYYY-MM-DD' }, 400);
       }
       existing.date = date;
+      rearm = true;
     }
     if (body.hour != null) {
       const hourNum = Number(body.hour);
@@ -128,11 +131,20 @@ export async function handleOneTimeReminderRoutes(request, env, path) {
         return json({ success: false, message: '小时应为 0-23 的整数' }, 400);
       }
       existing.hour = String(hourNum).padStart(2, '0');
+      rearm = true;
     }
     if (body.channels !== undefined) {
       existing.channels = otrRepo.normalizeChannels(body.channels);
+      rearm = true;
     }
-    if (body.status === 'cancelled') existing.status = 'cancelled';
+    if (body.status === 'cancelled') {
+      existing.status = /** @type {'cancelled'} */ ('cancelled');
+    } else if (body.status === 'pending' || rearm) {
+      // 重启或修改后重新进入待执行
+      existing.status = /** @type {'pending'} */ ('pending');
+      existing.sentAt = null;
+      existing.lastError = null;
+    }
     await otrRepo.save(env, existing);
     return json({ success: true, item: existing });
   }
