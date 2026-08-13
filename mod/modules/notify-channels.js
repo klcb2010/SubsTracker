@@ -1,10 +1,24 @@
 // @ts-check
 /**
  * 订阅级通知渠道：规范化与解析（mod 自有逻辑）
+ *
+ * 注意：不要从 dispatch.js import ALL_CHANNELS，否则会与
+ * dispatch → notify-channels → dispatch 形成循环依赖。
  */
-import { ALL_CHANNELS } from '../services/notify/dispatch.js';
 
-const VALID = Object.keys(ALL_CHANNELS);
+/** 与 dispatch.ALL_CHANNELS 的 key 保持一致 */
+const VALID = [
+  'telegram',
+  'notifyx',
+  'webhook',
+  'wechatbot',
+  'email',
+  'bark',
+  'gotify',
+  'serverchan',
+  'pushplus',
+  'ntfy'
+];
 
 /**
  * @param {unknown} input
@@ -33,9 +47,9 @@ export function resolveChannelNames(config, preferred) {
     : [];
   const preferredList = normalizeNotifyChannels(preferred);
   if (!preferredList || preferredList.length === 0) {
-    return enabled.filter((name) => ALL_CHANNELS[name] != null);
+    return enabled.filter((name) => VALID.includes(name));
   }
   return preferredList.filter(
-    (name) => enabled.includes(name) && ALL_CHANNELS[name] != null
+    (name) => enabled.includes(name) && VALID.includes(name)
   );
 }
