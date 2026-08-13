@@ -312,7 +312,8 @@
       .table-container { overflow: hidden; }
       .responsive-table thead { display: none; }
       .responsive-table tbody, .responsive-table tr, .responsive-table td { display: block; width: 100%; }
-      .responsive-table tr { margin-bottom: 1.5rem; border: 1px solid #ddd; border-radius: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }
+      .responsive-table tr { margin-bottom: 1.25rem; border: 1px solid #c7d2fe; border-radius: 0.5rem; box-shadow: 0 2px 6px rgba(79,70,229,0.08); overflow: hidden; background: #fff; }
+      .responsive-table tr + tr { border-top: 2px solid #a5b4fc; }
       .responsive-table td { display: flex; justify-content: flex-start; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid #eee; }
       .responsive-table td:last-of-type { border-bottom: none; }
       .responsive-table td:before { content: attr(data-label); font-weight: 600; text-align: left; padding-right: 1rem; color: #374151; white-space: nowrap; }
@@ -334,6 +335,17 @@
     @media (min-width: 768px) {
       .table-container { overflow-x: auto; }
       .responsive-table td[data-label="操作"] { min-width: 16rem; }
+    }
+
+
+    /* 桌面端订阅行更清晰的分割 */
+    @media (min-width: 768px) {
+      .responsive-table tbody tr {
+        border-bottom: 2px solid #e0e7ff;
+      }
+      .responsive-table tbody tr:last-child {
+        border-bottom: none;
+      }
     }
 
     /* Toast 样式 */
@@ -517,7 +529,7 @@
               </th>
             </tr>
           </thead>
-        <tbody id="subscriptionsBody" class="bg-white divide-y divide-gray-200">
+        <tbody id="subscriptionsBody" class="bg-white divide-y-2 divide-indigo-100">
         </tbody>
         </table>
       </div>
@@ -1928,18 +1940,18 @@ const lunarBiz = {
         ops += '<button class="otr-del delete btn-danger text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-trash-alt mr-1"></i>删除</button>';
 
         // 4 个可见信息行：时间 / 状态 / 推送 / 操作（名称合并进时间；提醒列隐藏）
-        // 桌面列：名称 | 推送 | 到期 | 提醒(隐) | 状态 | 操作
-        // 移动端 data-label：时间 / 推送 / 状态 / 操作（名称并入时间，提醒隐藏）
+        // 5 项带标题：名称 | 推送 | 时间 | (提醒隐) | 状态 | 操作
         row.innerHTML =
-          '<td data-label="时间" class="px-4 py-3"><div class="td-content-wrapper">' +
+          '<td data-label="名称" class="px-4 py-3"><div class="td-content-wrapper">' +
             '<div class="font-medium text-gray-900"><i class="fas fa-clock text-indigo-500 mr-1"></i>' + (it.title || '定时提醒') + '</div>' +
             (it.content ? '<div class="text-xs text-gray-500 mt-0.5 whitespace-pre-wrap">' + it.content + '</div>' : '') +
-            '<div class="text-sm text-gray-800 mt-1">' + timeText + '</div>' +
           '</div></td>' +
           '<td data-label="推送" class="px-4 py-3"><div class="td-content-wrapper">' +
             '<div class="text-sm text-gray-800"><i class="fas fa-paper-plane text-indigo-400 mr-1"></i>' + chText + '</div>' +
           '</div></td>' +
-          '<td data-label="到期" class="px-4 py-3" style="display:none" aria-hidden="true"></td>' +
+          '<td data-label="时间" class="px-4 py-3"><div class="td-content-wrapper">' +
+            '<div class="text-sm text-gray-800">' + timeText + '</div>' +
+          '</div></td>' +
           '<td data-label="提醒" class="px-4 py-3" style="display:none" aria-hidden="true"></td>' +
           '<td data-label="状态" class="px-4 py-3"><div class="td-content-wrapper">' +
             '<span class="px-2 py-1 text-xs font-medium rounded-full text-white ' + (statusClass[st] || 'bg-gray-500') + '">' +
