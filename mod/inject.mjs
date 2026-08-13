@@ -80,6 +80,17 @@ patch(
   'dispatch:import'
 );
 
+// DispatchOptions 增加 channels，消除 tsc 报错
+patch(
+  'src/services/notify/dispatch.js',
+  ` * @property {string} [logPrefix] console 日志前缀
+ */`,
+  ` * @property {string} [logPrefix] console 日志前缀
+ * @property {string[] | null} [channels] 指定渠道子集；空/不传则用全局启用渠道
+ */`,
+  'dispatch:typedef-channels'
+);
+
 patch(
   'src/services/notify/dispatch.js',
   `export async function dispatch(payload, config, options = {}) {
@@ -383,3 +394,4 @@ for (const [rel, marker] of checks) {
 }
 
 console.log('[inject] 完成（长期：mod 模块 + 锚点补丁）');
+
