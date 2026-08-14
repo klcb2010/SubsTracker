@@ -272,7 +272,7 @@
     /* 表格布局优化 */
     .table-container {
       width: 100%;
-      overflow-x: auto; overflow-y: visible;
+      overflow: hidden;
     }
 
     .table-container table {
@@ -282,7 +282,7 @@
 
     /* 防止表格内容溢出 */
     .table-container td {
-      overflow: visible;
+      overflow: hidden;
       word-wrap: break-word;
     }
 
@@ -309,28 +309,11 @@
     }
 
     @media (max-width: 767px) {
-      td.otr-hide-mobile { display: none !important; }
-      .table-container { overflow-x: auto; overflow-y: visible; }
+      .table-container { overflow: hidden; }
       .responsive-table thead { display: none; }
       .responsive-table tbody, .responsive-table tr, .responsive-table td { display: block; width: 100%; }
-      .responsive-table tr {
-        margin-bottom: 1rem;
-        border: 2px solid #8b5cf6 !important;
-        border-radius: 0.75rem;
-        box-shadow: 0 0 0 2px rgba(139,92,246,0.35);
-        overflow: visible;
-        background: inherit;
-      }
-      .responsive-table tr + tr {
-        margin-top: 0.85rem;
-      }
-      .responsive-table td[data-label="操作"] {
-        overflow: visible !important;
-      }
-      .action-buttons-wrapper {
-        flex-wrap: wrap;
-        max-width: 100%;
-      }
+      .responsive-table tr { margin-bottom: 1.25rem; border: 1px solid #c7d2fe; border-radius: 0.5rem; box-shadow: 0 2px 6px rgba(79,70,229,0.08); overflow: hidden; background: #fff; }
+      .responsive-table tr + tr { border-top: 2px solid #a5b4fc; }
       .responsive-table td { display: flex; justify-content: flex-start; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid #eee; }
       .responsive-table td:last-of-type { border-bottom: none; }
       .responsive-table td:before { content: attr(data-label); font-weight: 600; text-align: left; padding-right: 1rem; color: #374151; white-space: nowrap; }
@@ -350,63 +333,18 @@
       }
     }
     @media (min-width: 768px) {
-      .table-container { overflow-x: auto !important; overflow-y: visible !important; }
-      .responsive-table td[data-label="操作"] { min-width: 15rem; overflow: visible !important; }
+      .table-container { overflow-x: auto; }
+      .responsive-table td[data-label="操作"] { min-width: 16rem; }
     }
 
 
-    /* 桌面端：不使用紫色外框；保证横向可滚、操作列完整 */
+    /* 桌面端订阅行更清晰的分割 */
     @media (min-width: 768px) {
-      .table-container,
-      .table-container .overflow-x-auto {
-        overflow-x: auto !important;
-        overflow-y: visible !important;
-      }
-      .responsive-table {
-        border-collapse: collapse;
-        width: max-content;
-        min-width: 100%;
-      }
       .responsive-table tbody tr {
-        border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+        border-bottom: 2px solid #e0e7ff;
       }
-      .responsive-table td {
-        vertical-align: top;
-        overflow: visible !important;
-      }
-      .responsive-table td[data-label="操作"] {
-        min-width: 16.5rem;
-        width: 16.5rem;
-        white-space: normal;
-        overflow: visible !important;
-        position: sticky;
-        right: 0;
-        z-index: 2;
-        background: rgba(15, 23, 42, 0.92);
-        box-shadow: -8px 0 12px -6px rgba(0,0,0,0.35);
-      }
-      .responsive-table thead th:last-child {
-        position: sticky;
-        right: 0;
-        z-index: 3;
-        background: rgba(15, 23, 42, 0.96);
-        min-width: 16.5rem;
-      }
-      /* 浅色主题回退 */
-      @media (prefers-color-scheme: light) {
-        .responsive-table td[data-label="操作"],
-        .responsive-table thead th:last-child {
-          background: rgba(255,255,255,0.96);
-        }
-      }
-      .action-buttons-wrapper {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.3rem;
-        min-width: 15rem;
-      }
-      .action-buttons-wrapper button {
-        flex: 0 0 auto;
+      .responsive-table tbody tr:last-child {
+        border-bottom: none;
       }
     }
 
@@ -559,9 +497,6 @@
           <input type="checkbox" id="listShowLunar" class="form-checkbox h-4 w-4 text-indigo-600 shrink-0">
           <span class="text-gray-700">显示农历</span>
         </label>
-        <button id="addOneTimeReminderBtn" type="button" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center shrink-0" style="background:#7c3aed;">
-          <i class="fas fa-clock mr-2"></i>添加新定时
-        </button>
         <button id="addSubscriptionBtn" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center shrink-0">
           <i class="fas fa-plus mr-2"></i>添加新订阅
         </button>
@@ -569,7 +504,7 @@
       </div>
     </div>
     
-    <div class="table-container bg-white rounded-lg">
+    <div class="table-container bg-white rounded-lg overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full divide-y divide-gray-200 responsive-table">
           <thead class="bg-gray-50">
@@ -2000,13 +1935,12 @@ const lunarBiz = {
         if (st === 'pending') {
           ops += '<button class="otr-test test-notify btn-info text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-paper-plane mr-1"></i>测试</button>';
         } else {
-          ops += '<button class="otr-restart btn-success text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '" title="重新设为待执行，到点会再发"><i class="fas fa-redo mr-1"></i>重启</button>';
+          ops += '<button class="otr-restart btn-success text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '" title="重新设为待执行"><i class="fas fa-redo mr-1"></i>重启任务</button>';
         }
         ops += '<button class="otr-del delete btn-danger text-white px-2 py-1 rounded text-xs whitespace-nowrap" data-id="' + it.id + '"><i class="fas fa-trash-alt mr-1"></i>删除</button>';
 
         // 4 个可见信息行：时间 / 状态 / 推送 / 操作（名称合并进时间；提醒列隐藏）
-        // 桌面 6 列对齐：名称 | 推送 | 到期(时间) | 提醒 | 状态 | 操作
-        // 手机端 提醒列用 otr-hide-mobile 隐藏
+        // 5 项带标题：名称 | 推送 | 时间 | (提醒隐) | 状态 | 操作
         row.innerHTML =
           '<td data-label="名称" class="px-4 py-3"><div class="td-content-wrapper">' +
             '<div class="font-medium text-gray-900"><i class="fas fa-clock text-indigo-500 mr-1"></i>' + (it.title || '定时提醒') + '</div>' +
@@ -2024,9 +1958,9 @@ const lunarBiz = {
             '<i class="fas ' + (st === 'pending' ? 'fa-hourglass-half' : (st === 'sent' ? 'fa-check-circle' : 'fa-info-circle')) + ' mr-1"></i>' +
             (statusMap[st] || st) + '</span>' +
           '</div></td>' +
-          '<td data-label="操作" class="px-4 py-3"><div class="td-content-wrapper">' +
+          '<td data-label="操作" class="px-4 py-3">' +
             '<div class="action-buttons-wrapper">' + ops + '</div>' +
-          '</div></td>';
+          '</td>';
         tbody.appendChild(row);
       });
 
@@ -2100,19 +2034,16 @@ const lunarBiz = {
       var title = document.getElementById('otrTitle');
       var content = document.getElementById('otrContent');
       var hour = document.getElementById('otrHour');
-      var dateEl = document.getElementById('otrDate');
       var submitBtn = document.getElementById('otrSubmitBtn');
       if (title) title.value = '';
       if (content) content.value = '';
       if (hour) hour.value = '9';
-      if (dateEl) dateEl.value = '';
       if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus mr-1"></i>添加';
       document.querySelectorAll('.otr-ch').forEach(function (el) { el.checked = false; });
     }
 
     async function editOneTimeReminder(item) {
       await openOneTimeReminderModal();
-      showOtrForm(true);
       document.getElementById('otrId').value = item.id;
       document.getElementById('otrDate').value = item.date || '';
       document.getElementById('otrHour').value = String(Number(item.hour || 0));
@@ -2815,13 +2746,6 @@ const lunarBiz = {
       }
     }
     
-    var addOtrListBtn = document.getElementById('addOneTimeReminderBtn');
-    if (addOtrListBtn) {
-      addOtrListBtn.addEventListener('click', async function () {
-        await openOneTimeReminderModal();
-        openOtrCreateForm();
-      });
-    }
     document.getElementById('addSubscriptionBtn').addEventListener('click', () => {
       document.getElementById('modalTitle').textContent = '添加新订阅';
       document.getElementById('subscriptionModal').classList.remove('hidden');
@@ -3979,26 +3903,8 @@ const lunarBiz = {
       if (!modal) return;
       modal.classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
-      hideOtrForm();
-      await loadOneTimeReminders();
-    }
-    function showOtrForm(isEdit) {
-      var form = document.getElementById('oneTimeReminderForm');
-      var title = document.getElementById('otrFormTitle');
-      if (!form) return;
-      form.classList.remove('hidden');
-      if (title) title.textContent = isEdit ? '编辑提醒' : '新增提醒';
-      renderOtrChannels();
-    }
-    function hideOtrForm() {
-      var form = document.getElementById('oneTimeReminderForm');
-      if (form) form.classList.add('hidden');
-      resetOneTimeReminderForm();
-    }
-    async function openOtrCreateForm() {
-      resetOneTimeReminderForm();
-      showOtrForm(false);
       await renderOtrChannels();
+      await loadOneTimeReminders();
     }
     function closeOneTimeReminderModal() {
       const modal = document.getElementById('oneTimeReminderModal');
@@ -4133,7 +4039,7 @@ const lunarBiz = {
             const data = await res.json();
             if (data.success) {
               showToast(editId ? '已保存修改' : '已添加定时提醒', 'success');
-              hideOtrForm();
+              resetOneTimeReminderForm();
               await loadOneTimeReminders();
               // 同步主列表
               try {
@@ -4153,12 +4059,7 @@ const lunarBiz = {
         var resetBtn = document.getElementById('otrResetBtn');
         if (resetBtn && !resetBtn.dataset.otrBound) {
           resetBtn.dataset.otrBound = '1';
-          resetBtn.addEventListener('click', function () { hideOtrForm(); });
-        }
-        var openFormBtn = document.getElementById('openOtrFormBtn');
-        if (openFormBtn && !openFormBtn.dataset.otrBound) {
-          openFormBtn.dataset.otrBound = '1';
-          openFormBtn.addEventListener('click', function () { openOtrCreateForm(); });
+          resetBtn.addEventListener('click', function () { resetOneTimeReminderForm(); });
         }
       }
     }
@@ -4547,20 +4448,12 @@ const lunarBiz = {
   <div id="oneTimeReminderModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 overflow-y-auto">
     <div class="min-h-screen px-4 flex items-center justify-center py-8">
       <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl">
-        <div class="flex items-center justify-between px-6 py-4 border-b gap-3">
+        <div class="flex items-center justify-between px-6 py-4 border-b">
           <h3 class="text-lg font-semibold text-gray-800"><i class="fas fa-clock text-indigo-500 mr-2"></i>定时提醒</h3>
-          <div class="flex items-center gap-2">
-            <button type="button" id="openOtrFormBtn" class="btn-primary text-white px-3 py-1.5 rounded-md text-sm whitespace-nowrap">
-              <i class="fas fa-plus mr-1"></i>新增提醒
-            </button>
-            <button type="button" id="closeOneTimeReminderModal" class="text-gray-400 hover:text-gray-600 px-1"><i class="fas fa-times"></i></button>
-          </div>
+          <button type="button" id="closeOneTimeReminderModal" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
         </div>
         <div class="p-6 space-y-5">
-          <form id="oneTimeReminderForm" class="hidden space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <div class="flex items-center justify-between mb-1">
-              <h4 id="otrFormTitle" class="text-sm font-semibold text-gray-700">新增提醒</h4>
-            </div>
+          <form id="oneTimeReminderForm" class="space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block text-sm text-gray-700 mb-1">日期</label>
@@ -4585,12 +4478,12 @@ const lunarBiz = {
             </div>
             <input type="hidden" id="otrId" value="">
             <div class="flex justify-end gap-2">
-              <button type="button" id="otrResetBtn" class="px-4 py-2 rounded-md text-sm border border-gray-300 text-gray-700 bg-white hover:bg-gray-50">取消</button>
+              <button type="button" id="otrResetBtn" class="px-4 py-2 rounded-md text-sm border border-gray-300 text-gray-700 bg-white hover:bg-gray-50">清空</button>
               <button type="submit" id="otrSubmitBtn" class="btn-primary text-white px-4 py-2 rounded-md text-sm"><i class="fas fa-plus mr-1"></i>添加</button>
             </div>
           </form>
           <div>
-            <h4 class="text-sm font-semibold text-gray-700 mb-2">提醒列表</h4>
+            <h4 class="text-sm font-semibold text-gray-700 mb-2">已有提醒</h4>
             <div id="otrList" class="space-y-2 max-h-80 overflow-y-auto text-sm"></div>
           </div>
         </div>
