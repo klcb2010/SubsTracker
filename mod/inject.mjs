@@ -249,67 +249,52 @@ const upstreamFromSort = `    // 排序：按剩余天数升序，更紧迫的�
 
 console.log('[inject] 尝试 scheduler 分组发送补丁...');
 
-// subscriptions import - fix with unique anchor
+// subscriptions.js：import + create/update 写入 notifyChannels
 const subFile = path.join(root, 'src/data/subscriptions.js');
 let subText = read(subFile);
 if (!subText.includes("from '../mod/notify-channels.js'")) {
-  // undo bad patch if any - check first line
-  if (subText.startsWith('import { normalizeNotifyChannels }')) {
-    // ok maybe
+  if (subText.includes("from '../core/time.js'") || subText.includes('from "../core/time.js"')) {
+    subText = subText.replace(
+      /(import .+from ['"]\.\.\/core\/time\.js['"];?\n)/,
+      `$1import { normalizeNotifyChannels } from '../mod/notify-channels.js';\n`
+    );
   } else {
-    // Prefer after last import block
-    const marker = "import {";
-    const idx = subText.indexOf(marker);
-    if (idx < 0) throw new Error('subscriptions: no import');
-    // insert at very top after first comment block
-    if (subText.includes("from '../core/time.js'") || subText.includes('from "../core/time.js"')) {
-      subText = subText.replace(
-        /(import .+from ['"]\.\.\/core\/time\.js['"];?\n)/,
-        `$1import { normalizeNotifyChannels } from '../mod/notify-channels.js';\n`
-      );
-    } else {
-      subText = `import { normalizeNotifyChannels } from '../mod/notify-channels.js';\n` + subText;
-    }
+    subText = `import { normalizeNotifyChannels } from '../mod/notify-channels.js';\n` + subText;
+  }
+  write(subFile, subText);
+  console.log('[inject] patch subscriptions:import');
+}
+
+subText = read(subFile);
+// create: 在 useLunar / createdAt 前写入 notifyChannels
+if (!subText.includes('notifyChannels: normalizeNotifyChannels(subscription.notifyChannels)')) {
+  const createRe = /(useLunar:\s*useLunar,\s*\n)(\s*)(createdAt:\s*new Date\(\)\.toISOString\(\))/;
+  if (createRe.test(subText)) {
+    subText = subText.replace(
+      createRe,
+      `$1$2notifyChannels: normalizeNotifyChannels(subscription.notifyChannels),\n$2$3`
+    );
     write(subFile, subText);
-    console.log('[inject] patch subscriptions:import');
+    console.log('[inject] patch subscriptions:create-notifyChannels');
+  } else {
+    console.warn('[inject] warn: create notifyChannels 锚点未命中');
   }
 }
 
-// createSubscription notifyChannels field - look for common patterns
 subText = read(subFile);
-if (!subText.includes('normalizeNotifyChannels(subscription.notifyChannels)')) {
-  // try to patch return object in create
-  const createAnchor = /isActive:\s*subscription\.isActive\s*!==\s*false/;
-  // better search unique fields near end of create object
-  const patterns = [
-    [
-      /createdAt:\s*new Date\(\)\.toISOString\(\),?\n(\s*)updatedAt:\s*new Date\(\)\.toISOString\(\)/,
-      `createdAt: new Date().toISOString(),\n$1updatedAt: new Date().toISOString(),\n$1notifyChannels: normalizeNotifyChannels(subscription.notifyChannels)`
-    ]
-  ];
-  let ok = false;
-  for (const [re, rep] of patterns) {
-    if (re.test(subText)) {
-      subText = subText.replace(re, rep);
-      ok = true;
-      break;
-    }
-  }
-  if (!ok) {
-    console.warn('[inject] warn: subscriptions create notifyChannels 锚点未命中，请手工检查');
-  } else {
+// update: 在 useLunar / updatedAt 前写入（仅一处 update 合并对象）
+if ((subText.match(/notifyChannels:\s*normalizeNotifyChannels/g) || []).length < 2) {
+  const updateRe = /(useLunar:\s*useLunar,\s*\n)(\s*)(updatedAt:\s*new Date\(\)\.toISOString\(\))/;
+  if (updateRe.test(subText)) {
+    subText = subText.replace(
+      updateRe,
+      `$1$2notifyChannels:\n$2  subscription.notifyChannels !== undefined\n$2    ? normalizeNotifyChannels(subscription.notifyChannels)\n$2    : existing.notifyChannels != null\n$2      ? normalizeNotifyChannels(existing.notifyChannels)\n$2      : null,\n$2$3`
+    );
     write(subFile, subText);
-    console.log('[inject] patch subscriptions:create-field');
+    console.log('[inject] patch subscriptions:update-notifyChannels');
+  } else {
+    console.warn('[inject] warn: update notifyChannels 锚点未命中');
   }
-}
-
-// update path
-subText = read(subFile);
-if ((subText.match(/notifyChannels/g) || []).length < 2) {
-  // add to update merge if possible
-  const re = /(const updated = \{[\s\S]*?\.\.\.existing,[\s\S]*?)(\n\s*\};)/;
-  // too risky - skip with warn
-  console.warn('[inject] note: 请确认 updateSubscription 写入 notifyChannels（若已有则忽略）');
 }
 
 // subscriptions.handler test content + channels - optional light patch
