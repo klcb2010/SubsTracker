@@ -1,0 +1,50 @@
+name: Temporary Add Reminder Button
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message != 'chore: add reminder button'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Patch admin page
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('mod/assets/adminPage.html')
+          text = path.read_text(encoding='utf-8')
+
+          old = '''        <button id="addSubscriptionBtn" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center shrink-0">\n          <i class="fas fa-plus mr-2"></i>添加新订阅\n        </button>'''
+
+          new = '''        <button id="addOneTimeReminderFromListBtn" type="button" onclick="openOneTimeReminderModal()" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center shrink-0">\n          <i class="fas fa-bell mr-2"></i>添加新提醒\n        </button>\n        <button id="addSubscriptionBtn" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center shrink-0">\n          <i class="fas fa-plus mr-2"></i>添加新订阅\n        </button>'''
+
+          if old not in text:
+              raise SystemExit('目标按钮代码未找到，停止修改，避免误改文件。')
+
+          if 'id="addOneTimeReminderFromListBtn"' in text:
+              raise SystemExit('添加新提醒按钮已经存在，无需修改。')
+
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+      - name: Commit and remove temporary workflow
+        shell: bash
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/_tmp_add_reminder_button.yml
+          git add mod/assets/adminPage.html .github/workflows/_tmp_add_reminder_button.yml
+          git commit -m "chore: add reminder button"
+          git push origin master
