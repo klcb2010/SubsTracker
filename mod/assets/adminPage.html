@@ -272,7 +272,7 @@
     /* 表格布局优化 */
     .table-container {
       width: 100%;
-      overflow: hidden;
+      overflow-x: auto; overflow-y: visible;
     }
 
     .table-container table {
@@ -282,7 +282,7 @@
 
     /* 防止表格内容溢出 */
     .table-container td {
-      overflow: hidden;
+      overflow: visible;
       word-wrap: break-word;
     }
 
@@ -310,19 +310,26 @@
 
     @media (max-width: 767px) {
       td.otr-hide-mobile { display: none !important; }
-      .table-container { overflow: hidden; }
+      .table-container { overflow-x: auto; overflow-y: visible; }
       .responsive-table thead { display: none; }
       .responsive-table tbody, .responsive-table tr, .responsive-table td { display: block; width: 100%; }
       .responsive-table tr {
-        margin-bottom: 1.25rem;
-        border: 2px solid #a5b4fc;
-        border-radius: 0.5rem;
-        box-shadow: 0 2px 6px rgba(79,70,229,0.1);
-        overflow: hidden;
-        background: #fff;
+        margin-bottom: 1rem;
+        border: 2px solid #8b5cf6 !important;
+        border-radius: 0.65rem;
+        box-shadow: 0 0 0 1px rgba(139,92,246,0.25), 0 2px 8px rgba(139,92,246,0.15);
+        overflow: visible;
+        background: inherit;
       }
       .responsive-table tr + tr {
-        margin-top: 0.75rem;
+        margin-top: 0.85rem;
+      }
+      .responsive-table td[data-label="操作"] {
+        overflow: visible !important;
+      }
+      .action-buttons-wrapper {
+        flex-wrap: wrap;
+        max-width: 100%;
       }
       .responsive-table td { display: flex; justify-content: flex-start; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid #eee; }
       .responsive-table td:last-of-type { border-bottom: none; }
@@ -343,29 +350,50 @@
       }
     }
     @media (min-width: 768px) {
-      .table-container { overflow-x: auto; }
-      .responsive-table td[data-label="操作"] { min-width: 16rem; }
+      .table-container { overflow-x: auto !important; overflow-y: visible !important; }
+      .responsive-table td[data-label="操作"] { min-width: 15rem; overflow: visible !important; }
     }
 
 
-    /* 桌面端：紫色分隔线 */
+    /* 桌面端：每行紫色外框 + 操作列不被裁切 */
     @media (min-width: 768px) {
-      .responsive-table tbody tr {
-        border-bottom: 2px solid #a5b4fc;
+      .table-container {
+        overflow-x: auto !important;
+        overflow-y: visible !important;
       }
-      .responsive-table tbody tr:last-child {
-        border-bottom: 2px solid #a5b4fc;
+      .table-container .overflow-x-auto {
+        overflow-x: auto !important;
+      }
+      .responsive-table {
+        border-collapse: separate;
+        border-spacing: 0 10px;
+        min-width: 960px;
+      }
+      .responsive-table thead th {
+        border-bottom: none;
+      }
+      .responsive-table tbody tr {
+        outline: 2px solid #8b5cf6;
+        outline-offset: -1px;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(139,92,246,0.12);
       }
       .responsive-table td {
         vertical-align: top;
+        overflow: visible !important;
       }
-      /* 操作列不被挤/裁切 */
       .responsive-table td[data-label="操作"] {
-        min-width: 18rem;
+        min-width: 15rem;
         white-space: normal;
+        overflow: visible !important;
       }
       .action-buttons-wrapper {
-        min-width: 12rem;
+        min-width: 14rem;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+      }
+      .action-buttons-wrapper button {
+        flex: 0 0 auto;
       }
     }
 
@@ -528,7 +556,7 @@
       </div>
     </div>
     
-    <div class="table-container bg-white rounded-lg overflow-hidden">
+    <div class="table-container bg-white rounded-lg">
       <div class="overflow-x-auto">
         <table class="w-full divide-y divide-gray-200 responsive-table">
           <thead class="bg-gray-50">
