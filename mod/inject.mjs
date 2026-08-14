@@ -253,13 +253,26 @@ console.log('[inject] 尝试 scheduler 分组发送补丁...');
 const subFile = path.join(root, 'src/data/subscriptions.js');
 let subText = read(subFile);
 if (!subText.includes("from '../mod/notify-channels.js'")) {
-  if (subText.includes("from '../core/time.js'") || subText.includes('from "../core/time.js"')) {
+  // time.js 可能是多行 import { ... } from '../core/time.js'
+  if (/from ['"]\.\.\/core\/time\.js['"]/.test(subText)) {
     subText = subText.replace(
-      /(import .+from ['"]\.\.\/core\/time\.js['"];?\n)/,
-      `$1import { normalizeNotifyChannels } from '../mod/notify-channels.js';\n`
+      /from (['"])\.\.\/core\/time\.js\1;?\n/,
+      (m) => m + "import { normalizeNotifyChannels } from '../mod/notify-channels.js';\n"
+    );
+  } else if (/from ['"]\.\.\/core\/lunar\.js['"]/.test(subText)) {
+    subText = subText.replace(
+      /from (['"])\.\.\/core\/lunar\.js\1;?\n/,
+      (m) => m + "import { normalizeNotifyChannels } from '../mod/notify-channels.js';\n"
     );
   } else {
-    subText = `import { normalizeNotifyChannels } from '../mod/notify-channels.js';\n` + subText;
+    // 插到第一个 import 之前
+    subText = subText.replace(
+      /^import /m,
+      "import { normalizeNotifyChannels } from '../mod/notify-channels.js';\nimport "
+    );
+  }
+  if (!subText.includes("from '../mod/notify-channels.js'")) {
+    throw new Error('[inject] subscriptions:import 未能插入 normalizeNotifyChannels');
   }
   write(subFile, subText);
   console.log('[inject] patch subscriptions:import');
