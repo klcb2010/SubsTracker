@@ -2034,16 +2034,19 @@ const lunarBiz = {
       var title = document.getElementById('otrTitle');
       var content = document.getElementById('otrContent');
       var hour = document.getElementById('otrHour');
+      var dateEl = document.getElementById('otrDate');
       var submitBtn = document.getElementById('otrSubmitBtn');
       if (title) title.value = '';
       if (content) content.value = '';
       if (hour) hour.value = '9';
+      if (dateEl) dateEl.value = '';
       if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus mr-1"></i>添加';
       document.querySelectorAll('.otr-ch').forEach(function (el) { el.checked = false; });
     }
 
     async function editOneTimeReminder(item) {
       await openOneTimeReminderModal();
+      showOtrForm(true);
       document.getElementById('otrId').value = item.id;
       document.getElementById('otrDate').value = item.date || '';
       document.getElementById('otrHour').value = String(Number(item.hour || 0));
@@ -3903,8 +3906,26 @@ const lunarBiz = {
       if (!modal) return;
       modal.classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
-      await renderOtrChannels();
+      hideOtrForm();
       await loadOneTimeReminders();
+    }
+    function showOtrForm(isEdit) {
+      var form = document.getElementById('oneTimeReminderForm');
+      var title = document.getElementById('otrFormTitle');
+      if (!form) return;
+      form.classList.remove('hidden');
+      if (title) title.textContent = isEdit ? '编辑提醒' : '新增提醒';
+      renderOtrChannels();
+    }
+    function hideOtrForm() {
+      var form = document.getElementById('oneTimeReminderForm');
+      if (form) form.classList.add('hidden');
+      resetOneTimeReminderForm();
+    }
+    async function openOtrCreateForm() {
+      resetOneTimeReminderForm();
+      showOtrForm(false);
+      await renderOtrChannels();
     }
     function closeOneTimeReminderModal() {
       const modal = document.getElementById('oneTimeReminderModal');
@@ -4039,7 +4060,7 @@ const lunarBiz = {
             const data = await res.json();
             if (data.success) {
               showToast(editId ? '已保存修改' : '已添加定时提醒', 'success');
-              resetOneTimeReminderForm();
+              hideOtrForm();
               await loadOneTimeReminders();
               // 同步主列表
               try {
@@ -4059,7 +4080,12 @@ const lunarBiz = {
         var resetBtn = document.getElementById('otrResetBtn');
         if (resetBtn && !resetBtn.dataset.otrBound) {
           resetBtn.dataset.otrBound = '1';
-          resetBtn.addEventListener('click', function () { resetOneTimeReminderForm(); });
+          resetBtn.addEventListener('click', function () { hideOtrForm(); });
+        }
+        var openFormBtn = document.getElementById('openOtrFormBtn');
+        if (openFormBtn && !openFormBtn.dataset.otrBound) {
+          openFormBtn.dataset.otrBound = '1';
+          openFormBtn.addEventListener('click', function () { openOtrCreateForm(); });
         }
       }
     }
@@ -4448,12 +4474,20 @@ const lunarBiz = {
   <div id="oneTimeReminderModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 overflow-y-auto">
     <div class="min-h-screen px-4 flex items-center justify-center py-8">
       <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl">
-        <div class="flex items-center justify-between px-6 py-4 border-b">
+        <div class="flex items-center justify-between px-6 py-4 border-b gap-3">
           <h3 class="text-lg font-semibold text-gray-800"><i class="fas fa-clock text-indigo-500 mr-2"></i>定时提醒</h3>
-          <button type="button" id="closeOneTimeReminderModal" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+          <div class="flex items-center gap-2">
+            <button type="button" id="openOtrFormBtn" class="btn-primary text-white px-3 py-1.5 rounded-md text-sm whitespace-nowrap">
+              <i class="fas fa-plus mr-1"></i>新增提醒
+            </button>
+            <button type="button" id="closeOneTimeReminderModal" class="text-gray-400 hover:text-gray-600 px-1"><i class="fas fa-times"></i></button>
+          </div>
         </div>
         <div class="p-6 space-y-5">
-          <form id="oneTimeReminderForm" class="space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
+          <form id="oneTimeReminderForm" class="hidden space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div class="flex items-center justify-between mb-1">
+              <h4 id="otrFormTitle" class="text-sm font-semibold text-gray-700">新增提醒</h4>
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="block text-sm text-gray-700 mb-1">日期</label>
@@ -4478,12 +4512,12 @@ const lunarBiz = {
             </div>
             <input type="hidden" id="otrId" value="">
             <div class="flex justify-end gap-2">
-              <button type="button" id="otrResetBtn" class="px-4 py-2 rounded-md text-sm border border-gray-300 text-gray-700 bg-white hover:bg-gray-50">清空</button>
+              <button type="button" id="otrResetBtn" class="px-4 py-2 rounded-md text-sm border border-gray-300 text-gray-700 bg-white hover:bg-gray-50">取消</button>
               <button type="submit" id="otrSubmitBtn" class="btn-primary text-white px-4 py-2 rounded-md text-sm"><i class="fas fa-plus mr-1"></i>添加</button>
             </div>
           </form>
           <div>
-            <h4 class="text-sm font-semibold text-gray-700 mb-2">已有提醒</h4>
+            <h4 class="text-sm font-semibold text-gray-700 mb-2">提醒列表</h4>
             <div id="otrList" class="space-y-2 max-h-80 overflow-y-auto text-sm"></div>
           </div>
         </div>
