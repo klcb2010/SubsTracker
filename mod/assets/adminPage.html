@@ -491,16 +491,19 @@
             </select>
           </div>
 
+               <div class="flex items-center space-x-3 lg:space-x-4">
+          <button id="addOneTimeReminderFromListBtn"
+                  type="button"
+                  onclick="openOneTimeReminderModal()"
+                  class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center shrink-0">
+            <i class="fas fa-bell mr-2"></i>添加新提醒
+          </button>
+
+          <button id="addSubscriptionBtn"
+                  class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center shrink-0">
+            <i class="fas fa-plus mr-2"></i>添加新订阅
+          </button>
         </div>
-        <div class="flex items-center space-x-3 lg:space-x-4">
-        <label class="lunar-toggle">
-          <input type="checkbox" id="listShowLunar" class="form-checkbox h-4 w-4 text-indigo-600 shrink-0">
-          <span class="text-gray-700">显示农历</span>
-        </label>
-        <button id="addSubscriptionBtn" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center shrink-0">
-          <i class="fas fa-plus mr-2"></i>添加新订阅
-        </button>
-      </div>
       </div>
     </div>
     
