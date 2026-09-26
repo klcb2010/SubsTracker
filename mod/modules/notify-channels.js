@@ -6,7 +6,7 @@
  * dispatch → notify-channels → dispatch 形成循环依赖。
  */
 
-/** 与 dispatch.ALL_CHANNELS 的 key 保持一致 */
+/** 已知渠道名（订阅级勾选用）；全局 ENABLED_NOTIFIERS 不强制在此列表内 */
 const VALID = [
   'telegram',
   'notifyx',
@@ -17,7 +17,8 @@ const VALID = [
   'gotify',
   'serverchan',
   'pushplus',
-  'ntfy'
+  'ntfy',
+  'wpush'
 ];
 
 /**
@@ -46,10 +47,9 @@ export function resolveChannelNames(config, preferred) {
     ? config.ENABLED_NOTIFIERS.map((n) => String(n).toLowerCase())
     : [];
   const preferredList = normalizeNotifyChannels(preferred);
+  // 未指定订阅级渠道 → 信任系统全局启用列表（含上游新增渠道如 wpush）
   if (!preferredList || preferredList.length === 0) {
-    return enabled.filter((name) => VALID.includes(name));
+    return enabled;
   }
-  return preferredList.filter(
-    (name) => enabled.includes(name) && VALID.includes(name)
-  );
+  return preferredList.filter((name) => enabled.includes(name));
 }

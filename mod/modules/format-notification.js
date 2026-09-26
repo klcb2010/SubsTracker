@@ -1,7 +1,21 @@
 // @ts-check
-import { formatTimeInTimezone } from '../core/time.js';
+import { formatTimeInTimezone, getTimezoneDateParts } from '../core/time.js';
 import { lunarCalendar } from '../core/lunar.js';
-import { getTimezoneDateParts } from '../core/time.js';
+import { resolveReminderSetting } from '../services/notify/reminder.js';
+
+/**
+ * @param {any} rule
+ * @returns {string}
+ */
+function formatMatchedReminderRule(rule) {
+  if (!rule) return '';
+  if (rule.type === 'on_expiry') return '到期当天';
+  if (rule.type === 'after_expiry') {
+    return `到期后每 ${rule.repeatInterval || 24} 小时`;
+  }
+  if (rule.value === 0) return rule.unit === 'hours' ? '到期当小时' : '到期当天';
+  return `提前 ${rule.value} ${rule.unit === 'hours' ? '小时' : '天'}`;
+}
 
 function formatLunarExpiryText(expiry, timezone) {
   try {
@@ -14,7 +28,7 @@ function formatLunarExpiryText(expiry, timezone) {
 }
 
 /**
- * 精简版到期通知正文
+ * 精简版到期通知正文（保留「提醒策略」行以兼容上游测试与可读性）
  * @param {any[]} subscriptions
  * @param {any} config
  */
@@ -38,12 +52,28 @@ export function formatNotificationContent(subscriptions, config) {
     const notesText =
       sub.notes && String(sub.notes).trim() ? String(sub.notes).trim() : '';
 
+    const reminderSetting = sub.matchedReminderRule ? null : resolveReminderSetting(sub);
+    const reminderSuffix = reminderSetting?.value === 0
+      ? '（仅到期时提醒）'
+      : (reminderSetting?.unit === 'hour' ? '（小时级提醒）' : '');
+    const reminderText = sub.matchedReminderRule
+      ? `提醒策略: ${formatMatchedReminderRule(sub.matchedReminderRule)}`
+      : reminderSetting
+        ? `提醒策略: 提前 ${reminderSetting.value} ${reminderSetting.unit === 'hour' ? '小时' : '天'}${reminderSuffix}`
+        : '';
+
     let block = `**${sub.name}**
 到期日期: ${formattedExpiryDate}${lunarExpiryText}
-自动续期: ${autoRenewText}
+自动续期: ${autoRenewText}`;
+    if (reminderText) block += `
+${reminderText}`;
+    block += `
 到期状态: ${statusText}`;
-    if (notesText) block += `\n备注: ${notesText}`;
-    content += block + '\n\n';
+    if (notesText) block += `
+备注: ${notesText}`;
+    content += block + '
+
+';
   }
 
   const currentTime = formatTimeInTimezone(new Date(), timezone, 'datetime');
