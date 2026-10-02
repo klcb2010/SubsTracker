@@ -3854,11 +3854,13 @@ const lunarBiz = {
         `;
         // 绑定事件
         wrap.querySelector('.rule-type').addEventListener('change', () => {
+          collect();
           rule.type = wrap.querySelector('.rule-type').value;
           if (rule.type === 'after_expiry' && rule.repeatInterval == null) rule.repeatInterval = 24;
           render();
         });
         wrap.querySelector('.rule-delete').addEventListener('click', () => {
+          collect();
           rules = rules.filter(r => r.id !== rule.id);
           render();
         });
@@ -3939,6 +3941,7 @@ const lunarBiz = {
         const addBtn = document.getElementById('reminderRulesAddBtn');
         const presetBtn = document.getElementById('reminderRulesPresetBtn');
         if (addBtn) addBtn.addEventListener('click', () => {
+          collect();
           rules.push({
             id: uuid(),
             type: 'before_expiry',
