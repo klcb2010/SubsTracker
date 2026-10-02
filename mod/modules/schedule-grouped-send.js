@@ -50,7 +50,8 @@ export async function sendReadyByChannelGroups(args) {
     const enrichedSubs = group.map((c) => ({
       ...c.sub,
       daysRemaining: c.daysDiff,
-      hoursRemaining: Math.round(c.hoursDiff)
+      hoursRemaining: Math.round(c.hoursDiff),
+      matchedReminderRule: c.rule
     }));
     const content = formatNotificationContent(enrichedSubs, config);
     const title = '订阅到期/续费提醒';

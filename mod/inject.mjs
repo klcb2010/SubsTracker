@@ -338,11 +338,13 @@ if (fs.existsSync(handlerFile)) {
   }
 }
 
-// scheduler grouped send - replace original aggregate block
+// scheduler grouped send - 必须检测「调用」而非 import 字符串
+// （imports 补丁会先写入 sendReadyByChannelGroups，旧逻辑会误 skip）
 let sched = read(path.join(root, 'src/services/scheduler.js'));
-if (!sched.includes('sendReadyByChannelGroups')) {
-  const re = /\/\/ 排序：按剩余天数升序，更紧迫的在前\n\s*ready\.sort\(\(a, b\) => a\.daysDiff - b\.daysDiff\);[\s\S]*?sentCount = dispatchResult\.successCount;/;
-  const replacement = `// mod: 按渠道分组发送
+if (!sched.includes('await sendReadyByChannelGroups')) {
+  // 兼容上游 enrichedSubs 是否含 matchedReminderRule
+  const re = /\/\/ 排序：按剩余天数升序[\s\S]*?ready\.sort\(\(a, b\) => a\.daysDiff - b\.daysDiff\);[\s\S]*?sentCount = dispatchResult\.successCount;/;
+  const replacement = `// mod: 按渠道分组发送（尊重订阅 notifyChannels）
     const grouped = await sendReadyByChannelGroups({
       ready,
       config,
@@ -361,21 +363,17 @@ if (!sched.includes('sendReadyByChannelGroups')) {
       channelResults: grouped.mergedChannelResults
     };`;
   if (!re.test(sched)) {
-    console.warn('[inject] warn: scheduler 分组发送锚点未命中，保留上游聚合发送逻辑');
-  } else {
-    sched = sched.replace(re, replacement);
-    // remove duplicate dedupe block that followed old dispatch - dangerous
-    // Old code still has "if (dispatchResult.successCount > 0) { dedupe...}" - sendReadyByChannelGroups already did dedupe
-    // Remove the following dedupe block once
-    const dedupeRe = /\/\/ 仅在至少一渠道成功时写入去重与 lastFire，失败可在后续 tick 重试\n\s*if \(dispatchResult\.successCount > 0\) \{\n\s*const firedAt = now\.utc\.toISOString\(\);\n\s*await Promise\.all\(\n\s*ready\.map\(async \(c\) => \{\n\s*await env\.SUBSCRIPTIONS_KV\.put\(c\.dedupeKey, '1', \{ expirationTtl: DEDUPE_TTL_SEC \}\);\n\s*if \(c\.rule\.type === 'after_expiry'\) \{\n\s*await writeLastFireAt\(env, c\.sub\.id, c\.rule\.id, firedAt\);\n\s*\}\n\s*\}\)\n\s*\);\n\s*\}/;
-    if (dedupeRe.test(sched)) {
-      sched = sched.replace(dedupeRe, '// mod: 去重已在 sendReadyByChannelGroups 内完成');
-    }
-    write(path.join(root, 'src/services/scheduler.js'), sched);
-    console.log('[inject] patch scheduler:grouped-send');
+    throw new Error('[inject] scheduler 分组发送锚点未命中 — 订阅独立渠道将失效，请更新 inject 锚点');
   }
+  sched = sched.replace(re, replacement);
+  const dedupeRe = /\/\/ 仅在至少一渠道成功时写入去重与 lastFire[\s\S]*?await Promise\.all\(\s*ready\.map\(async \(c\) => \{[\s\S]*?\}\)\s*\);\s*\}/;
+  if (dedupeRe.test(sched)) {
+    sched = sched.replace(dedupeRe, '// mod: 去重已在 sendReadyByChannelGroups 内完成');
+  }
+  write(path.join(root, 'src/services/scheduler.js'), sched);
+  console.log('[inject] patch scheduler:grouped-send');
 } else {
-  console.log('[inject] skip scheduler:grouped-send (already)');
+  console.log('[inject] skip scheduler:grouped-send (already applied)');
 }
 
 // 校验
@@ -383,7 +381,8 @@ const checks = [
   ['src/mod/notify-channels.js', 'normalizeNotifyChannels'],
   ['src/mod/process-one-time.js', 'processOneTimeReminders'],
   ['src/services/notify/dispatch.js', 'resolveChannelNames'],
-  ['src/api/handlers/extras.js', 'handleOneTimeReminderRoutes']
+  ['src/api/handlers/extras.js', 'handleOneTimeReminderRoutes'],
+  ['src/services/scheduler.js', 'await sendReadyByChannelGroups']
 ];
 for (const [rel, marker] of checks) {
   const t = read(path.join(root, rel));
