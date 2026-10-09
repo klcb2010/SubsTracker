@@ -1,0 +1,76 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync-inject-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: 配置 Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: 上游
+        run: |
+          git remote add upstream https://github.com/wangwangit/SubsTracker.git || true
+          git fetch origin master
+          git fetch upstream master
+
+      - name: 检查更新
+        id: upstream
+        run: |
+          COUNT=$(git rev-list --count origin/master..upstream/master || echo 0)
+          echo "上游领先: $COUNT"
+          if [ "$COUNT" -eq 0 ]; then echo "changed=false" >> $GITHUB_OUTPUT
+          else echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 备份 mod + sync.yml
+        if: steps.upstream.outputs.changed == 'true'
+        run: |
+          mkdir -p /tmp/local_custom
+          cp -a mod /tmp/local_custom/mod
+          cp .github/workflows/sync.yml /tmp/local_custom/sync.yml
+
+      - name: 同步上游
+        if: steps.upstream.outputs.changed == 'true'
+        run: |
+          git checkout master
+          git reset --hard upstream/master
+
+      - name: 恢复定制
+        if: steps.upstream.outputs.changed == 'true'
+        run: |
+          rm -rf mod
+          cp -a /tmp/local_custom/mod mod
+          mkdir -p .github/workflows
+          cp /tmp/local_custom/sync.yml .github/workflows/sync.yml
+          git add mod .github/workflows/sync.yml
+          git commit -m "Sync upstream (keep mod + sync.yml)" || true
+          git push origin master --force-with-lease || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: node mod/inject.mjs
+      - run: npm run lint && npm test
+      - run: npm run deploy:safe
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
